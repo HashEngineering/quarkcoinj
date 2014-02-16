@@ -20,13 +20,15 @@ import com.google.bitcoin.core.NetworkParameters;
 import com.google.bitcoin.core.Sha256Hash;
 import com.google.bitcoin.core.Utils;
 import com.google.bitcoin.core.CoinDefinition;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import static com.google.common.base.Preconditions.checkState;
 
 /**
  * Parameters for the main production network on which people trade goods and services.
  */
 public class MainNetParams extends NetworkParameters {
+    private static final Logger log = LoggerFactory.getLogger(MainNetParams.class);
     public MainNetParams() {
         super();
         interval = INTERVAL;
@@ -42,10 +44,14 @@ public class MainNetParams extends NetworkParameters {
         genesisBlock.setDifficultyTarget(CoinDefinition.genesisBlockDifficultyTarget);
         genesisBlock.setTime(CoinDefinition.genesisBlockTime);
         genesisBlock.setNonce(CoinDefinition.genesisBlockNonce);
+        genesisBlock.setVersion(112);
+
         id = ID_MAINNET;
         subsidyDecreaseBlockCount = CoinDefinition.subsidyDecreaseBlockCount;
         spendableCoinbaseDepth = CoinDefinition.spendableCoinbaseDepth;
+        genesisBlock.setMerkleRoot(new Sha256Hash("868b2fb28cb1a0b881480cc85eb207e29e6ae75cdd6d26688ed34c2d2d23c776"));
         String genesisHash = genesisBlock.getHashAsString();
+        log.info("Genesis Block (complete): " + genesisBlock.toString()) ;
         checkState(genesisHash.equals(CoinDefinition.genesisHash),
                 genesisHash);
 

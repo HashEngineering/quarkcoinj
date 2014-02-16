@@ -105,7 +105,9 @@ public class Sha256Hash implements Serializable, Comparable {
     @Override
     public int hashCode() {
         // Use the last 4 bytes, not the first 4 which are often zeros in Bitcoin.
-        return (bytes[31] & 0xFF) | ((bytes[30] & 0xFF) << 8) | ((bytes[29] & 0xFF) << 16) | ((bytes[28] & 0xFF) << 24);
+        //return (bytes[31] & 0xFF) | ((bytes[30] & 0xFF) << 8) | ((bytes[29] & 0xFF) << 16) | ((bytes[28] & 0xFF) << 24);
+        return (bytes[3] & 0xFF) | ((bytes[2] & 0xFF) << 8) | ((bytes[1] & 0xFF) << 16) | ((bytes[0] & 0xFF) << 24);
+
     }
 
     @Override

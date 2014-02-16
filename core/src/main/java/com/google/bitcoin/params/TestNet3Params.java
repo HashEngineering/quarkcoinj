@@ -18,6 +18,7 @@ package com.google.bitcoin.params;
 
 import com.google.bitcoin.core.CoinDefinition;
 import com.google.bitcoin.core.NetworkParameters;
+import com.google.bitcoin.core.Sha256Hash;
 import com.google.bitcoin.core.Utils;
 import org.spongycastle.util.encoders.Hex;
 
@@ -46,8 +47,11 @@ public class TestNet3Params extends NetworkParameters {
         genesisBlock.setTime(CoinDefinition.testnetGenesisBlockTime);
         genesisBlock.setDifficultyTarget(CoinDefinition.testnetGenesisBlockDifficultyTarget);
         genesisBlock.setNonce(CoinDefinition.testnetGenesisBlockNonce);
+        genesisBlock.setVersion(112);
+
         spendableCoinbaseDepth = 100;
         subsidyDecreaseBlockCount = CoinDefinition.subsidyDecreaseBlockCount;
+        genesisBlock.setMerkleRoot(new Sha256Hash("868b2fb28cb1a0b881480cc85eb207e29e6ae75cdd6d26688ed34c2d2d23c776"));
         String genesisHash = genesisBlock.getHashAsString();
         if(CoinDefinition.supportsTestNet)
             checkState(genesisHash.equals(CoinDefinition.testnetGenesisHash));

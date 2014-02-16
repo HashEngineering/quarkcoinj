@@ -87,7 +87,7 @@ public class Block extends Message {
 
     /** Stores the hash of the block. If null, getHash() will recalculate it. */
     private transient Sha256Hash hash;
-    private transient Sha256Hash scryptHash;
+    //private transient Sha256Hash scryptHash;
 
     private transient boolean headerParsed;
     private transient boolean transactionsParsed;
@@ -192,7 +192,8 @@ public class Block extends Message {
         difficultyTarget = readUint32();
         nonce = readUint32();
 
-        hash = new Sha256Hash(Utils.reverseBytes(Utils.doubleDigest(bytes, offset, cursor)));
+        hash = new Sha256Hash(Utils.reverseBytes(/*Utils.doubleDigest*/CoinDefinition.quarkDigest(bytes, offset, cursor)));
+        //Utils.doubleDigest(a, b, c);
 
         headerParsed = true;
         headerBytesValid = parseRetain;
@@ -506,13 +507,13 @@ public class Block extends Message {
         try {
             ByteArrayOutputStream bos = new UnsafeByteArrayOutputStream(HEADER_SIZE);
             writeHeader(bos);
-            return new Sha256Hash(Utils.reverseBytes(doubleDigest(bos.toByteArray())));
+            return new Sha256Hash(Utils.reverseBytes(CoinDefinition.quarkDigest(bos.toByteArray())));
         } catch (IOException e) {
             throw new RuntimeException(e); // Cannot happen.
         }
     }
 
-    private Sha256Hash calculateScryptHash() {
+    /*private Sha256Hash calculateScryptHash() {
         try {
             ByteArrayOutputStream bos = new UnsafeByteArrayOutputStream(HEADER_SIZE);
             writeHeader(bos);
@@ -520,7 +521,16 @@ public class Block extends Message {
         } catch (IOException e) {
             throw new RuntimeException(e); // Cannot happen.
         }
-    }
+    }*/
+    /*private Sha256Hash calculateQuarkHash() {
+        try {
+            ByteArrayOutputStream bos = new UnsafeByteArrayOutputStream(HEADER_SIZE);
+            writeHeader(bos);
+            return new Sha256Hash(Utils.reverseBytes(CoinDefinition.quarkDigest(bos.toByteArray())));
+        } catch (IOException e) {
+            throw new RuntimeException(e); // Cannot happen.
+        }
+    }*/
 
     /**
      * Returns the hash of the block (which for a valid, solved block should be below the target) in the form seen on
@@ -531,9 +541,13 @@ public class Block extends Message {
         return getHash().toString();
     }
 
-    public String getScryptHashAsString() {
+    /*public String getScryptHashAsString() {
         return getScryptHash().toString();
-    }
+    }*/
+
+    /*public String getQuarkHashAsString() {
+        return getQuarkHash().toString();
+    }*/
 
     /**
      * Returns the hash of the block (which for a valid, solved block should be
@@ -545,11 +559,16 @@ public class Block extends Message {
         return hash;
     }
 
-    public Sha256Hash getScryptHash() {
+    /*public Sha256Hash getScryptHash() {
         if (scryptHash == null)
             scryptHash = calculateScryptHash();
         return scryptHash;
-    }
+    }*/
+    /*public Sha256Hash getQuarkHash() {
+        if (quarkHash == null)
+            quarkHash = calculateQuarkHash();
+        return quarkHash;
+    }*/
 
 
     /**
@@ -668,11 +687,11 @@ public class Block extends Message {
         // field is of the right value. This requires us to have the preceeding blocks.
         BigInteger target = getDifficultyTargetAsInteger();
 
-        BigInteger h = getScryptHash().toBigInteger();
+        BigInteger h = getHash().toBigInteger();
         if (h.compareTo(target) > 0) {
             // Proof of work check failed!
             if (throwException)
-                throw new VerificationException("Hash is higher than target: " + getScryptHashAsString() + " vs "
+                throw new VerificationException("Hash is higher than target: " + getHashAsString() + " vs "
                         + target.toString(16));
             else
                 return false;
@@ -856,7 +875,7 @@ public class Block extends Message {
     }
 
     /** Exists only for unit testing. */
-    void setMerkleRoot(Sha256Hash value) {
+    public void setMerkleRoot(Sha256Hash value) {
         unCacheHeader();
         merkleRoot = value;
         hash = null;
@@ -890,6 +909,9 @@ public class Block extends Message {
         maybeParseHeader();
         return version;
     }
+    public void setVersion(int newVersion) {
+        version = newVersion;
+    }
 
     /**
      * Returns the hash of the previous block in the chain, as defined by the block header.
@@ -903,7 +925,7 @@ public class Block extends Message {
         unCacheHeader();
         this.prevBlockHash = prevBlockHash;
         this.hash = null;
-        this.scryptHash = null;
+        //this.scryptHash = null;
     }
 
     /**
@@ -926,7 +948,7 @@ public class Block extends Message {
         unCacheHeader();
         this.time = time;
         this.hash = null;
-        this.scryptHash = null;
+//        this.scryptHash = null;
     }
 
     /**
@@ -948,7 +970,7 @@ public class Block extends Message {
         unCacheHeader();
         this.difficultyTarget = compactForm;
         this.hash = null;
-        this.scryptHash = null;
+        //this.scryptHash = null;
     }
 
     /**
@@ -965,7 +987,7 @@ public class Block extends Message {
         unCacheHeader();
         this.nonce = nonce;
         this.hash = null;
-        this.scryptHash = null;
+//        this.scryptHash = null;
     }
 
     /** Returns an immutable list of transactions held in this block. */
