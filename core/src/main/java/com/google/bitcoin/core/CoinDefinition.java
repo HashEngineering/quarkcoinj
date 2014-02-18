@@ -27,6 +27,7 @@ public class CoinDefinition {
     public static final String coinName = "Quark";
     public static final String coinTicker = "QRK";
     public static final String coinURIScheme = "quark";
+    public static final String coinURIScheme2 = "quarkcoin";
     public static final String coinInternalName = "quarkcoin";
     public static final String cryptsyMarketId = "71";
     public static final String cryptsyMarketCurrency = "BTC";

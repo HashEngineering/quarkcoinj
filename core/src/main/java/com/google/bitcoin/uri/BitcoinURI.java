@@ -86,6 +86,7 @@ public class BitcoinURI {
     public static final String FIELD_PAYMENT_REQUEST_URL = "r";
 
     public static final String BITCOIN_SCHEME = CoinDefinition.coinURIScheme;
+    public static final String BITCOIN_SCHEME2 = CoinDefinition.coinURIScheme2;
     private static final String ENCODED_SPACE_CHARACTER = "%20";
     private static final String AMPERSAND_SEPARATOR = "&";
     private static final String QUESTION_MARK_SEPARATOR = "?";
@@ -140,10 +141,17 @@ public class BitcoinURI {
         String scheme1 = BITCOIN_SCHEME + "://";
         String scheme2 = BITCOIN_SCHEME + ":";
 
+        String scheme1_2 = BITCOIN_SCHEME2 + "://";
+        String scheme2_2 = BITCOIN_SCHEME2 + ":";
+
         if (input.startsWith(scheme1)) {
             schemeSpecificPart = input.substring(scheme1.length());
+        } else if (input.startsWith(scheme1_2)) {
+                schemeSpecificPart = input.substring(scheme1_2.length());
         } else if (input.startsWith(scheme2)) {
             schemeSpecificPart = input.substring(scheme2.length());
+        } else if (input.startsWith(scheme2_2)) {
+            schemeSpecificPart = input.substring(scheme2_2.length());
         } else {
             throw new BitcoinURIParseException("Unsupported URI scheme: " + uri.getScheme());
         }
@@ -151,7 +159,7 @@ public class BitcoinURI {
         // Split off the address from the rest of the query parameters.
         String[] addressSplitTokens = schemeSpecificPart.split("\\?");
         if (addressSplitTokens.length == 0)
-            throw new BitcoinURIParseException("No data found after the bitcoin: prefix");
+            throw new BitcoinURIParseException("No data found after the quark: prefix");
         String addressToken = addressSplitTokens[0];  // may be empty!
 
         String[] nameValuePairTokens;

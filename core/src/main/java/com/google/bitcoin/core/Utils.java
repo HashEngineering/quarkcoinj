@@ -120,6 +120,14 @@ public class Utils {
      * @throws ArithmeticException if you try to specify fractional nanocoins, or nanocoins out of range.
      */
     public static BigInteger toNanoCoins(String coins) {
+        BigInteger bigint = new BigDecimal(coins).movePointRight(5).toBigIntegerExact();
+        if (bigint.compareTo(BigInteger.ZERO) < 0)
+            throw new ArithmeticException("Negative coins specified");
+        if (bigint.compareTo(NetworkParameters.MAX_MONEY) > 0)
+            throw new ArithmeticException("Amount larger than the total quantity of Bitcoins possible specified.");
+        return bigint;
+    }
+    public static BigInteger toNanoCoins_BTC(String coins) {
         BigInteger bigint = new BigDecimal(coins).movePointRight(8).toBigIntegerExact();
         if (bigint.compareTo(BigInteger.ZERO) < 0)
             throw new ArithmeticException("Negative coins specified");
