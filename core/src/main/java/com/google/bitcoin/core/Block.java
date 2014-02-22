@@ -171,7 +171,7 @@ public class Block extends Message {
      */
     public BigInteger getBlockInflation(int height) {
         //return Utils.toNanoCoins(50, 0).shiftRight(height / params.getSubsidyDecreaseBlockCount());
-        return /*Utils.toNanoCoins(*/CoinDefinition.GetBlockReward(height)/*, 0)*/;
+        return /*Utils.toNanoCoins(*/CoinDefinition.GetBlockValue(height)/*, 0)*/;
     }
 
     private void readObject(ObjectInputStream ois) throws ClassNotFoundException, IOException {

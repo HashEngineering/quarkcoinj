@@ -118,29 +118,29 @@ public class CoinDefinition {
 
     //net.cpp strDNSSeed
     static public String[] dnsSeeds = new String[] {
-            "seed1.qrk.cc",
-        //    "seed2.qrk.cc",
-         //   "seed3.qrk.cc",
-           // "seed4.qrk.cc",
-           // "seed5.qrk.cc",
-           // "seed6.qrk.cc",
-            "seed1.qrkcoin.org",
-           // "seed2.qrkcoin.org",
-          //  "seed3.qrkcoin.org",
-           // "seed4.qrkcoin.org",
-           // "seed5.qrkcoin.org",
-           // "seed6.qrkcoin.org",
-            "seed1.quarkinvest.info",
-           // "seed2.quarkinvest.info",
-           // "seed3.quarkinvest.info",
-           // "seed4.quarkinvest.info",
-           // "seed5.quarkinvest.info",
-           // "seed6.quarkinvest.info",
-            "quarkcoin.no-ip.biz",
-            "quarkcoin.mooo.com",
-            //"qrk.ignorelist.com",
-            "qrk.redirectme.net",
-            "qrk.no-ip.biz",
+            "seed1.qrk.cc",      //162.243.253.209     ***
+        //    "seed2.qrk.cc",    //95.85.4.223
+         //   "seed3.qrk.cc",    //192.241.195.203
+            "seed4.qrk.cc",    //192.241.151.155
+            "seed5.qrk.cc",    //95.85.2.86
+           // "seed6.qrk.cc",    //162.243.138.170
+           // "seed1.qrkcoin.org",   //192.241.151.155  (duplicate)
+           // "seed2.qrkcoin.org", //95.85.4.223        (duplicate)
+            "seed3.qrkcoin.org", //193.68.21.25 ***
+           // "seed4.qrkcoin.org",  //95.85.4.223       (duplicate)
+           // "seed5.qrkcoin.org",  //162.243.138.170   (duplicate)
+           // "seed6.qrkcoin.org",  //95.85.2.86        (duplicate)
+           // "seed1.quarkinvest.info",  //192.241.151.155 (duplicate)
+           // "seed2.quarkinvest.info",  //95.85.2.86      (duplicate)
+           // "seed3.quarkinvest.info",  //162.243.138.170 (duplicate)
+           // "seed4.quarkinvest.info",  //95.85.4.223     (duplicate)
+           // "seed5.quarkinvest.info",  //192.241.195.203 (duplicate)
+           // "seed6.quarkinvest.info",  //192.241.151.155 (duplicate)
+            //"quarkcoin.no-ip.biz",       //95.85.2.86    (duplicate)
+            "quarkcoin.mooo.com",   //192.241.171.45
+            //"qrk.ignorelist.com", //162.243.138.170      (duplicate)
+            "qrk.redirectme.net",  //162.243.253.209  ***
+            "qrk.no-ip.biz",       //192.241.151.155       (duplicate)
 
     };
 
@@ -157,11 +157,34 @@ public class CoinDefinition {
     static public long testnetGenesisBlockNonce = (905523645);                         //main.cpp: LoadBlockIndex
 
 
-
-
+    static final long _COIN = 100000;
+    static final BigInteger nGenesisBlockRewardCoin = COIN;
+    static final BigInteger nBlockRewardStartCoin = BigInteger.valueOf(2048 * _COIN);
+    static final BigInteger nBlockRewardMinimumCoin = COIN;
 
     //main.cpp GetBlockValue(height, fee)
-    public static final BigInteger GetBlockReward(int height)
+    static final BigInteger GetBlockValue(int nHeight)
+    {
+        if (nHeight == 0)
+        {
+            return nGenesisBlockRewardCoin;
+        }
+
+        BigInteger nSubsidy = BigInteger.valueOf(2048L * 100000L);
+
+        // Subsidy is cut in half every 60480 blocks (21 days)
+        //nSubsidy >>= (nHeight / 60480);
+        nSubsidy = nSubsidy.shiftRight(nHeight / 60480);
+
+        // Minimum subsidy
+        if (nSubsidy.compareTo(nBlockRewardMinimumCoin) < 0)
+        {
+            nSubsidy = nBlockRewardMinimumCoin;
+        }
+
+        return nSubsidy;
+    }
+/*    public static final BigInteger GetBlockReward(int height)
     {
         int COIN = 1;
         BigInteger nSubsidy = Utils.toNanoCoins(15, 0);
@@ -207,7 +230,7 @@ public class CoinDefinition {
             return nSubsidy.shiftRight(height / subsidyDecreaseBlockCount);
         }
         return nSubsidy;
-    }
+    }*/
 
     public static int subsidyDecreaseBlockCount = 60480;     //main.cpp GetBlockValue(height, fee)
 
