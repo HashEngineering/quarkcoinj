@@ -40,8 +40,12 @@ public class CoinDefinition {
     public static final CoinPrecision coinPrecision = CoinPrecision.Coins;
 
 
-    public static final String BLOCKEXPLORER_BASE_URL_PROD = "http://quarkexplorer.com/";
-    public static final String BLOCKEXPLORER_BASE_URL_TEST = "http://quarkexplorer.com/";
+    //public static final String BLOCKEXPLORER_BASE_URL_PROD = "http://quarkexplorer.com/";
+    //public static final String BLOCKEXPLORER_BASE_URL_TEST = "http://quarkexplorer.com/";
+    public static final String BLOCKEXPLORER_BASE_URL_PROD = "http://qrk.blockr.io/";
+    public static final String BLOCKEXPLORER_BASE_URL_TEST = "http://qrk.blockr.io/";
+    public static final String BLOCKEXPLORER_PATH_URL_PROD = "block/info/";
+    public static final String BLOCKEXPLORER_PATH_URL_TEST = "block/info/";
 
     public static final String DONATION_ADDRESS = "QVJZByN6HdrTuEjAbgXpAnEUxUeeUaoEcA";  //HashEngineering donation QRK address
 
@@ -118,11 +122,13 @@ public class CoinDefinition {
 
     //net.cpp strDNSSeed
     static public String[] dnsSeeds = new String[] {
+            "110.174.173.86",
+            "87.220.147.144",
             "seed1.qrk.cc",      //162.243.253.209     ***
         //    "seed2.qrk.cc",    //95.85.4.223
          //   "seed3.qrk.cc",    //192.241.195.203
-            "seed4.qrk.cc",    //192.241.151.155
-            "seed5.qrk.cc",    //95.85.2.86
+            "seed4.qrk.cc",    //192.241.151.155 ***
+            "seed5.qrk.cc",    //95.85.2.86      ***
            // "seed6.qrk.cc",    //162.243.138.170
            // "seed1.qrkcoin.org",   //192.241.151.155  (duplicate)
            // "seed2.qrkcoin.org", //95.85.4.223        (duplicate)
@@ -137,13 +143,13 @@ public class CoinDefinition {
            // "seed5.quarkinvest.info",  //192.241.195.203 (duplicate)
            // "seed6.quarkinvest.info",  //192.241.151.155 (duplicate)
             //"quarkcoin.no-ip.biz",       //95.85.2.86    (duplicate)
-            "quarkcoin.mooo.com",   //192.241.171.45
+            "quarkcoin.mooo.com",   //192.241.171.45  ***
             //"qrk.ignorelist.com", //162.243.138.170      (duplicate)
-            "qrk.redirectme.net",  //162.243.253.209  ***
-            "qrk.no-ip.biz",       //192.241.151.155       (duplicate)
+            //"qrk.redirectme.net",  //162.243.253.209  ***  (duplicate)
+            //"qrk.no-ip.biz",       //192.241.151.155       (duplicate)
 
     };
-
+    public static int minBroadcastConnections = 0;   //0 for default; we need more peers.
     //
     // TestNet - digitalcoin - not tested
     //
