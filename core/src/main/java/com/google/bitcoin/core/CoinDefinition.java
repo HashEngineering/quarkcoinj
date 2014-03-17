@@ -122,6 +122,14 @@ public class CoinDefinition {
 
     //net.cpp strDNSSeed
     static public String[] dnsSeeds = new String[] {
+            "seed1.quarkfoundation.cc", //95.85.58.230
+            "seed2.quarkfoundation.cc", //162.243.46.40
+            "seed3.quarkfoundation.cc",// 188.226.154.76
+            "seed4.quarkfoundation.cc",// 128.199.215.12
+            //"seed5.quarkfoundation.cc",
+            //"seed6.quarkfoundation.cc",
+            //"seed7.quarkfoundation.cc",
+            //"seed8.quarkfoundation.cc",
             "110.174.173.86",
             "87.220.147.144",
             "seed1.qrk.cc",      //162.243.253.209     ***
@@ -151,7 +159,7 @@ public class CoinDefinition {
     };
     public static int minBroadcastConnections = 0;   //0 for default; we need more peers.
     //
-    // TestNet - digitalcoin - not tested
+    // TestNet - quarkcoin - not tested
     //
     public static final boolean supportsTestNet = false;
     public static final int testnetAddressHeader = 119;             //base58.h CBitcoinAddress::PUBKEY_ADDRESS_TEST
