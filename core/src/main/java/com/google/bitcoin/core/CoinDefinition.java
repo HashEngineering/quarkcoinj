@@ -126,10 +126,10 @@ public class CoinDefinition {
             "seed2.quarkfoundation.cc", //162.243.46.40
             "seed3.quarkfoundation.cc",// 188.226.154.76
             "seed4.quarkfoundation.cc",// 128.199.215.12
-            //"seed5.quarkfoundation.cc",
-            //"seed6.quarkfoundation.cc",
-            //"seed7.quarkfoundation.cc",
-            //"seed8.quarkfoundation.cc",
+            "seed5.quarkfoundation.cc",
+            "seed6.quarkfoundation.cc",
+            "seed7.quarkfoundation.cc",
+            "seed8.quarkfoundation.cc",
             "110.174.173.86",
             "87.220.147.144",
             "seed1.qrk.cc",      //162.243.253.209     ***
