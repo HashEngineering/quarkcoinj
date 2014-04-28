@@ -146,32 +146,14 @@ public class CoinDefinition {
             //"198.50.30.145",                    //offline
             "178.237.35.34",
             "dgc.kadaplace.com",
-            //"dnsseed.digitalcoin.co",
+            //"dnsseed.digitalcoin.co",            //offline
             "dnsseed.rc.altcointech.net",
             "54.208.77.156",
             "68.14.170.140",
-            //"207.12.89.119",
-            //"198.50.30.145",
-            //"178.237.35.34",
-            //"dgc.kadaplace.com",
 
-            //"50.116.22.43",                           //dgc.cryptocoinexplorer.com
-            //"88.161.131.83",
-            //"98.253.19.158" ,
-    //"198.50.233.6"           ,
-    //"82.161.111.51"          ,
-    //"93.96.179.57"           ,
-    //"37.187.9.53"            ,
-    //"68.63.214.65"           ,
-    //"54.215.9.205"           ,
-
-    //"97.114.111.53"  ,
-
-    //"93.96.179.57" ,
-    //"173.228.105.207"
     };
 
-    public static int minBroadcastConnections = 0;   //0 for default; we need more peers.
+    public static int minBroadcastConnections = 1;   //0 for default; we need more peers.
 
     //
     // TestNet - digitalcoin - not tested
