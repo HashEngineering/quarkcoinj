@@ -100,7 +100,7 @@ public class BuildCheckpoints {
             StoredBlock test = manager.getCheckpointBefore(1390500000); // Thu Jan 23 19:00:00 CET 2014
             checkState(test.getHeight() == 280224);
             checkState(test.getHeader().getHashAsString()
-                    .equals("00000000000000000b5d59a15f831e1c45cb688a4db6b0a60054d49a9997fa34"));
+                    .equals("5a4e378e1fd0cc77d9e4cfe84216366908e9352b3b5a661c7f0b590e4b077e27"));
         } else if (PARAMS.getId() == NetworkParameters.ID_TESTNET) {
             StoredBlock test = manager.getCheckpointBefore(1390500000); // Thu Jan 23 19:00:00 CET 2014
             checkState(test.getHeight() == 167328);
