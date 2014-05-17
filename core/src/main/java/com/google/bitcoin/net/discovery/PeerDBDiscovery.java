@@ -272,6 +272,13 @@ public class PeerDBDiscovery implements PeerDiscovery {
 
             @Override
             public void onPeerDisconnected(Peer p, int peerCount) {
+                /*if(p.addressMessages.size() > 0)
+                {
+                    for (AddressMessage m : p.addressMessages)
+                    {
+                        onPreMessageReceived(p, m);
+                    }
+                }*/
                 addAddress(p.getAddress(), p.getAddress()).disconnected();
             }
         });

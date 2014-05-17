@@ -142,6 +142,15 @@ public class Peer extends PeerSocketHandler {
     // A settable future which completes (with this) when the connection is open
     private final SettableFuture<Peer> connectionOpenFuture = SettableFuture.create();
 
+    //HashEngineering
+    /*public ArrayList<AddressMessage> addressMessages = new ArrayList<AddressMessage>();
+
+    void addAddressMessage(AddressMessage m)
+    {
+       if(addressMessages.size() < 4)
+           addressMessages.add(m);
+    }*/
+
     /**
      * <p>Construct a peer that reads/writes from the given block chain.</p>
      *
@@ -316,6 +325,16 @@ public class Peer extends PeerSocketHandler {
         } else if (m instanceof GetDataMessage) {
             processGetData((GetDataMessage) m);
         } else if (m instanceof AddressMessage) {
+            //addAddressMessage((AddressMessage)m);
+            /*final AddressMessage mf = (AddressMessage)m;
+            for (final ListenerRegistration<PeerEventListener> registration : eventListeners) {
+                registration.executor.execute(new Runnable() {
+                    @Override
+                    public void run() {
+                        registration.listener.onPreMessageReceived(Peer.this, mf);
+                    }
+                });
+            }*/
             // We don't care about addresses of the network right now. But in future,
             // we should save them in the wallet so we don't put too much load on the seed nodes and can
             // properly explore the network.
@@ -387,6 +406,8 @@ public class Peer extends PeerSocketHandler {
             // Shut down the channel
             throw new ProtocolException("Peer does not have a copy of the block chain.");
         }
+        //Hash Engineering
+        //sendMessage(new GetAddrMessage(params));
     }
 
     private void startFilteredBlock(FilteredBlock m) {

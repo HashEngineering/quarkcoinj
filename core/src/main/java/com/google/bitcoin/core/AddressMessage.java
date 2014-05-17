@@ -56,6 +56,12 @@ public class AddressMessage extends Message {
         super(params, payload, 0, false, false, UNKNOWN_LENGTH);
     }
 
+    public AddressMessage(NetworkParameters params) {
+       super(params);
+        numAddresses = 0;
+        addresses = new ArrayList<PeerAddress>((int) numAddresses);
+    }
+
     @Override
     protected void parseLite() throws ProtocolException {
     }

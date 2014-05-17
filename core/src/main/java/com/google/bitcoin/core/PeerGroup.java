@@ -582,7 +582,11 @@ public class PeerGroup extends AbstractExecutionThreadService implements Transac
         for (PeerDiscovery peerDiscovery : peerDiscoverers) {
             InetSocketAddress[] addresses;
             addresses = peerDiscovery.getPeers(5, TimeUnit.SECONDS);
-            for (InetSocketAddress address : addresses) addressSet.add(new PeerAddress(address));
+            for (InetSocketAddress address : addresses)
+            {
+                if(address != null)
+                    addressSet.add(new PeerAddress(address));
+            }
             if (addressSet.size() > 0) break;
         }
         lock.lock();

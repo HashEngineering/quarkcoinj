@@ -32,7 +32,7 @@ import com.google.bitcoin.core.CoinDefinition;
 /**
  * A version of PeerDBDiscovery that only returns nodes which support Bloom filters according to Litecoin's BLOOM bit
  */
-public class LitcoinPeerDBDiscovery extends PeerDBDiscovery {
+public class LitecoinPeerDBDiscovery extends PeerDBDiscovery {
     // Ugly hack to only let the PeerDB know about peers with NODE_BLOOM (1<<1)
     // Wrap the connected event listener and intercept calls to it
     private static class WrappedEventListener extends AbstractPeerEventListener {
@@ -49,7 +49,7 @@ public class LitcoinPeerDBDiscovery extends PeerDBDiscovery {
                 for (PeerAddress addr : ((AddressMessage) m).getAddresses())
                     if (!CoinDefinition.supportsBloomFiltering || addr.getServices().and(BigInteger.valueOf(1 << 1)).equals(BigInteger.valueOf(1 << 1)))
                         newMessage.addAddress(addr);
-                return newMessage;
+                return parent.onPreMessageReceived(p, newMessage);
             }
             return m;
         }
@@ -83,7 +83,7 @@ public class LitcoinPeerDBDiscovery extends PeerDBDiscovery {
         }
     }
 
-    public LitcoinPeerDBDiscovery(NetworkParameters params, File db, PeerGroup group) {
+    public LitecoinPeerDBDiscovery(NetworkParameters params, File db, PeerGroup group) {
         super(params, db, new PeerGroupWrapper(params, group));
     }
 }
