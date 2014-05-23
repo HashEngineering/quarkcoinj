@@ -1,5 +1,6 @@
 /**
  * Copyright 2011 Google Inc.
+ * Copyright 2014 Andreas Schildbach
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,20 +19,16 @@ package com.google.bitcoin.core;
 
 import com.google.bitcoin.core.Transaction.SigHash;
 import com.google.bitcoin.core.Wallet.SendRequest;
-import com.google.bitcoin.wallet.DefaultCoinSelector;
-import com.google.bitcoin.wallet.RiskAnalysis;
 import com.google.bitcoin.crypto.KeyCrypter;
 import com.google.bitcoin.crypto.KeyCrypterException;
 import com.google.bitcoin.crypto.KeyCrypterScrypt;
 import com.google.bitcoin.crypto.TransactionSignature;
 import com.google.bitcoin.store.WalletProtobufSerializer;
-import com.google.bitcoin.utils.MockTransactionBroadcaster;
-import com.google.bitcoin.utils.TestUtils;
-import com.google.bitcoin.utils.TestWithWallet;
+import com.google.bitcoin.testing.FakeTxBuilder;
+import com.google.bitcoin.testing.MockTransactionBroadcaster;
+import com.google.bitcoin.testing.TestWithWallet;
 import com.google.bitcoin.utils.Threading;
-import com.google.bitcoin.wallet.KeyTimeCoinSelector;
-import com.google.bitcoin.wallet.WalletFiles;
-import com.google.bitcoin.wallet.WalletTransaction;
+import com.google.bitcoin.wallet.*;
 import com.google.bitcoin.wallet.WalletTransaction.Pool;
 import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -57,7 +54,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.google.bitcoin.core.Utils.*;
-import static com.google.bitcoin.utils.TestUtils.*;
+import static com.google.bitcoin.testing.FakeTxBuilder.*;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import static org.junit.Assert.*;
@@ -692,12 +689,12 @@ public class WalletTest extends TestWithWallet {
         final BigInteger value2 = Utils.toNanoCoins(2, 0);
         // Give us three coins and make sure we have some change.
         sendMoneyToWallet(value.add(value2), AbstractBlockChain.NewBlockType.BEST_CHAIN);
-        // The two transactions will have different hashes due to the lack of deterministic signing, but will be
-        // otherwise identical. Once deterministic signatures are implemented, this test will have to be tweaked.
         final Address address = new ECKey().toAddress(params);
         Transaction send1 = checkNotNull(wallet.createSend(address, value2));
         Transaction send2 = checkNotNull(wallet.createSend(address, value2));
-        send1 = roundTripTransaction(params, send1);
+        byte[] buf = send1.bitcoinSerialize();
+        buf[43] = 0;  // Break the signature: bitcoinj won't check in SPV mode and this is easier than other mutations.
+        send1 = new Transaction(params, buf);
         wallet.commitTx(send2);
         wallet.allowSpendingUnconfirmedTransactions();
         assertEquals(value, wallet.getBalance(Wallet.BalanceType.ESTIMATED));
@@ -775,7 +772,7 @@ public class WalletTest extends TestWithWallet {
                 send1.getConfidence().getConfidenceType());
         assertEquals(send2, received.getOutput(0).getSpentBy().getParentTransaction());
 
-        TestUtils.DoubleSpends doubleSpends = TestUtils.createFakeDoubleSpendTxns(params, myAddress);
+        FakeTxBuilder.DoubleSpends doubleSpends = FakeTxBuilder.createFakeDoubleSpendTxns(params, myAddress);
         // t1 spends to our wallet. t2 double spends somewhere else.
         wallet.receivePending(doubleSpends.t1, null);
         assertEquals(TransactionConfidence.ConfidenceType.PENDING,
@@ -948,7 +945,7 @@ public class WalletTest extends TestWithWallet {
     @Test
     public void transactionsList() throws Exception {
         // Check the wallet can give us an ordered list of all received transactions.
-        Utils.rollMockClock(0);
+        Utils.setMockClock();
         Transaction tx1 = sendMoneyToWallet(Utils.toNanoCoins(1, 0), AbstractBlockChain.NewBlockType.BEST_CHAIN);
         Utils.rollMockClock(60 * 10);
         Transaction tx2 = sendMoneyToWallet(Utils.toNanoCoins(0, 5), AbstractBlockChain.NewBlockType.BEST_CHAIN);
@@ -986,7 +983,8 @@ public class WalletTest extends TestWithWallet {
     @Test
     public void keyCreationTime() throws Exception {
         wallet = new Wallet(params);
-        long now = Utils.rollMockClock(0).getTime() / 1000;  // Fix the mock clock.
+        Utils.setMockClock();
+        long now = Utils.currentTimeSeconds();
         // No keys returns current time.
         assertEquals(now, wallet.getEarliestKeyCreationTime());
         Utils.rollMockClock(60);
@@ -1000,7 +998,8 @@ public class WalletTest extends TestWithWallet {
     @Test
     public void scriptCreationTime() throws Exception {
         wallet = new Wallet(params);
-        long now = Utils.rollMockClock(0).getTime() / 1000;  // Fix the mock clock.
+        Utils.setMockClock();
+        long now = Utils.currentTimeSeconds();
         // No keys returns current time.
         assertEquals(now, wallet.getEarliestKeyCreationTime());
         Utils.rollMockClock(60);
@@ -1232,9 +1231,24 @@ public class WalletTest extends TestWithWallet {
 
         // Wait for an auto-save to occur.
         latch.await();
-        assertFalse(hash4.equals(Sha256Hash.hashFileContents(f)));  // File has now changed.
+        Sha256Hash hash5 = Sha256Hash.hashFileContents(f);
+        assertFalse(hash4.equals(hash5));  // File has now changed.
         assertNotNull(results[0]);
         assertEquals(f, results[1]);
+
+        // Now we shutdown auto-saving and expect wallet changes to remain unsaved, even "important" changes.
+        wallet.shutdownAutosaveAndWait();
+        results[0] = results[1] = null;
+        ECKey key2 = new ECKey();
+        wallet.addKey(key2);
+        assertEquals(hash5, Sha256Hash.hashFileContents(f)); // File has NOT changed.
+        Transaction t2 = createFakeTx(params, toNanoCoins(5, 0), key2);
+        Block b3 = createFakeBlock(blockStore, t2).block;
+        chain.add(b3);
+        Thread.sleep(2000); // Wait longer than autosave delay. TODO Fix the racyness.
+        assertEquals(hash5, Sha256Hash.hashFileContents(f)); // File has still NOT changed.
+        assertNull(results[0]);
+        assertNull(results[1]);
     }
 
     @Test
@@ -2172,9 +2186,9 @@ public class WalletTest extends TestWithWallet {
 
     @Test
     public void keyRotation() throws Exception {
+        Utils.setMockClock();
         // Watch out for wallet-initiated broadcasts.
         MockTransactionBroadcaster broadcaster = new MockTransactionBroadcaster(wallet);
-        wallet.setTransactionBroadcaster(broadcaster);
         wallet.setKeyRotationEnabled(true);
         // Send three cents to two different keys, then add a key and mark the initial keys as compromised.
         ECKey key1 = new ECKey();
@@ -2238,19 +2252,19 @@ public class WalletTest extends TestWithWallet {
         assertArrayEquals(address.getHash160(), tx.getOutput(0).getScriptPubKey().getPubKeyHash());
     }
 
-    //@Test   - this test is slow, disable for now.
+    //@Test   //- this test is slow, disable for now.
     public void fragmentedReKeying() throws Exception {
         // Send lots of small coins and check the fee is correct.
         ECKey key = new ECKey();
         wallet.addKey(key);
         Address address = key.toAddress(params);
+        Utils.setMockClock();
         Utils.rollMockClock(86400);
         for (int i = 0; i < 800; i++) {
             sendMoneyToWallet(wallet, Utils.CENT, address, AbstractBlockChain.NewBlockType.BEST_CHAIN);
         }
 
         MockTransactionBroadcaster broadcaster = new MockTransactionBroadcaster(wallet);
-        wallet.setTransactionBroadcaster(broadcaster);
         wallet.setKeyRotationEnabled(true);
 
         Date compromise = Utils.now();

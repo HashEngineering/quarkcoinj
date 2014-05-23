@@ -96,7 +96,7 @@ public class FullBlockTestGenerator {
         this.params = params;
         coinbaseOutKey = new ECKey();
         coinbaseOutKeyPubKey = coinbaseOutKey.getPubKey();
-        Utils.rollMockClock(0); // Set a mock clock for timestamp tests
+        Utils.setMockClock();
     }
 
     public RuleList getBlocksToTest(boolean addSigExpensiveBlocks, boolean runLargeReorgs, File blockStorageFile) throws ScriptException, ProtocolException, IOException {
@@ -964,7 +964,7 @@ public class FullBlockTestGenerator {
         
         // Block with timestamp > 2h in the future
         Block b48 = createNextBlock(b44, chainHeadHeight + 16, out15, null);
-        b48.setTime(Utils.currentTimeMillis() / 1000 + 60*60*3);
+        b48.setTime(Utils.currentTimeSeconds() + 60*60*3);
         b48.solve();
         blocks.add(new BlockAndValidity(blockToHeightMap, b48, false, true, b44.getHash(), chainHeadHeight + 15, "b48"));
         
@@ -1617,7 +1617,8 @@ public class FullBlockTestGenerator {
         // (finally) return the created chain
         return ret;
     }
-    
+
+    private byte uniquenessCounter = 0;
     private Block createNextBlock(Block baseBlock, int nextBlockHeight, TransactionOutPointWithValue prevOut,
             BigInteger additionalCoinbaseValue) throws ScriptException {
         Integer height = blockToHeightMap.get(baseBlock.getHash());
@@ -1634,7 +1635,7 @@ public class FullBlockTestGenerator {
             t.addOutput(new TransactionOutput(params, t, BigInteger.valueOf(1),
                     ScriptBuilder.createOutputScript(new ECKey(null, coinbaseOutKeyPubKey)).getProgram()));
             // Spendable output
-            t.addOutput(new TransactionOutput(params, t, BigInteger.ZERO, new byte[] {OP_1}));
+            t.addOutput(new TransactionOutput(params, t, BigInteger.ZERO, new byte[] {OP_1, uniquenessCounter++}));
             addOnlyInputToTransaction(t, prevOut);
             block.addTransaction(t);
             block.solve();

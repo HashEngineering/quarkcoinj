@@ -28,6 +28,7 @@ import java.io.OutputStream;
 import java.io.Serializable;
 import java.lang.ref.WeakReference;
 import java.math.BigInteger;
+import java.util.Arrays;
 
 import static com.google.common.base.Preconditions.*;
 
@@ -54,8 +55,8 @@ public class TransactionOutput extends ChildMessage implements Serializable {
     private boolean availableForSpending;
     @Nullable private TransactionInput spentBy;
 
-    // A reference to the transaction which holds this output.
-    Transaction parentTransaction;
+    // A reference to the transaction which holds this output, if any.
+    @Nullable Transaction parentTransaction;
     private transient int scriptLen;
 
     /**
@@ -80,7 +81,7 @@ public class TransactionOutput extends ChildMessage implements Serializable {
      * the cached bytes may be repopulated and retained if the message is serialized again in the future.
      * @throws ProtocolException
      */
-    public TransactionOutput(NetworkParameters params, Transaction parent, byte[] msg, int offset,
+    public TransactionOutput(NetworkParameters params, @Nullable Transaction parent, byte[] msg, int offset,
                              boolean parseLazy, boolean parseRetain) throws ProtocolException {
         super(params, msg, offset, parent, parseLazy, parseRetain, UNKNOWN_LENGTH);
         parentTransaction = parent;
@@ -92,7 +93,7 @@ public class TransactionOutput extends ChildMessage implements Serializable {
      * something like {@link Utils#toNanoCoins(int, int)}. Typically you would use
      * {@link Transaction#addOutput(java.math.BigInteger, Address)} instead of creating a TransactionOutput directly.
      */
-    public TransactionOutput(NetworkParameters params, Transaction parent, BigInteger value, Address to) {
+    public TransactionOutput(NetworkParameters params, @Nullable Transaction parent, BigInteger value, Address to) {
         this(params, parent, value, ScriptBuilder.createOutputScript(to).getProgram());
     }
 
@@ -101,11 +102,11 @@ public class TransactionOutput extends ChildMessage implements Serializable {
      * amount should be created with something like {@link Utils#toNanoCoins(int, int)}. Typically you would use
      * {@link Transaction#addOutput(java.math.BigInteger, ECKey)} instead of creating an output directly.
      */
-    public TransactionOutput(NetworkParameters params, Transaction parent, BigInteger value, ECKey to) {
+    public TransactionOutput(NetworkParameters params, @Nullable Transaction parent, BigInteger value, ECKey to) {
         this(params, parent, value, ScriptBuilder.createOutputScript(to).getProgram());
     }
 
-    public TransactionOutput(NetworkParameters params, Transaction parent, BigInteger value, byte[] scriptBytes) {
+    public TransactionOutput(NetworkParameters params, @Nullable Transaction parent, BigInteger value, byte[] scriptBytes) {
         super(params);
         // Negative values obviously make no sense, except for -1 which is used as a sentinel value when calculating
         // SIGHASH_SINGLE signatures, so unfortunately we have to allow that here.
@@ -174,7 +175,7 @@ public class TransactionOutput extends ChildMessage implements Serializable {
     }
 
     int getIndex() {
-        checkNotNull(parentTransaction);
+        checkNotNull(parentTransaction, "This output is not attached to a parent transaction.");
         for (int i = 0; i < parentTransaction.getOutputs().size(); i++) {
             if (parentTransaction.getOutputs().get(i) == this)
                 return i;
@@ -331,5 +332,31 @@ public class TransactionOutput extends ChildMessage implements Serializable {
     private void writeObject(ObjectOutputStream out) throws IOException {
         maybeParse();
         out.defaultWriteObject();
+    }
+
+    /** Returns a copy of the output detached from its containing transaction, if need be. */
+    public TransactionOutput duplicateDetached() {
+        return new TransactionOutput(params, null, value, org.spongycastle.util.Arrays.clone(scriptBytes));
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        TransactionOutput output = (TransactionOutput) o;
+
+        if (!Arrays.equals(scriptBytes, output.scriptBytes)) return false;
+        if (value != null ? !value.equals(output.value) : output.value != null) return false;
+        if (parentTransaction != null && parentTransaction != output.parentTransaction) return false;
+
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = value != null ? value.hashCode() : 0;
+        result = 31 * result + (scriptBytes != null ? Arrays.hashCode(scriptBytes) : 0);
+        return result;
     }
 }

@@ -1,5 +1,6 @@
 /*
  * Copyright 2013 Google Inc.
+ * Copyright 2014 Andreas Schildbach
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,8 +23,9 @@ import com.google.bitcoin.store.BlockStoreException;
 import com.google.bitcoin.store.SPVBlockStore;
 import com.google.bitcoin.store.WalletProtobufSerializer;
 import com.google.common.util.concurrent.AbstractIdleService;
-import com.google.common.util.concurrent.FutureCallback;
-import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.MoreExecutors;
+import com.google.common.util.concurrent.Service;
+import com.subgraph.orchid.TorClient;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -32,6 +34,7 @@ import java.io.InputStream;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
@@ -75,6 +78,7 @@ public class WalletAppKit extends AbstractIdleService {
     protected boolean autoStop = true;
     protected InputStream checkpoints;
     protected boolean blockingStartup = true;
+    protected boolean useTor = false;   // Perhaps in future we can change this to true.
     protected String userAgent, version;
 
     public WalletAppKit(NetworkParameters params, File directory, String filePrefix) {
@@ -155,6 +159,15 @@ public class WalletAppKit extends AbstractIdleService {
     }
 
     /**
+     * If called, then an embedded Tor client library will be used to connect to the P2P network. The user does not need
+     * any additional software for this: it's all pure Java. As of April 2014 <b>this mode is experimental</b>.
+     */
+    public WalletAppKit useTor() {
+        this.useTor = true;
+        return this;
+    }
+
+    /**
      * <p>Override this to load all wallet extensions if any are necessary.</p>
      *
      * <p>When this is called, chain(), store(), and peerGroup() will return the created objects, however they are not
@@ -213,8 +226,11 @@ public class WalletAppKit extends AbstractIdleService {
                 vWallet = new Wallet(params);
                 vWallet.addKey(new ECKey());
                 addWalletExtensions();
+                vWallet.saveToFile(vWalletFile);
             }
-            if (useAutoSave) vWallet.autosaveToFile(vWalletFile, 1, TimeUnit.SECONDS, null);
+            if (useAutoSave) {
+                vWallet.autosaveToFile(vWalletFile, 200, TimeUnit.MILLISECONDS, null);
+            }
             // Set up peer addresses or discovery first, so if wallet extensions try to broadcast a transaction
             // before we're actually connected the broadcast waits for an appropriate number of connections.
             if (peerAddresses != null) {
@@ -228,26 +244,29 @@ public class WalletAppKit extends AbstractIdleService {
             onSetupCompleted();
 
             if (blockingStartup) {
-                vPeerGroup.startAndWait();
+                vPeerGroup.startAsync();
+                vPeerGroup.awaitRunning();
                 // Make sure we shut down cleanly.
                 installShutdownHook();
+
                 // TODO: Be able to use the provided download listener when doing a blocking startup.
                 final DownloadListener listener = new DownloadListener();
                 vPeerGroup.startBlockChainDownload(listener);
                 listener.await();
             } else {
-                Futures.addCallback(vPeerGroup.start(), new FutureCallback<State>() {
+                vPeerGroup.startAsync();
+                vPeerGroup.addListener(new Service.Listener() {
                     @Override
-                    public void onSuccess(State result) {
+                    public void running() {
                         final PeerEventListener l = downloadListener == null ? new DownloadListener() : downloadListener;
                         vPeerGroup.startBlockChainDownload(l);
                     }
 
                     @Override
-                    public void onFailure(Throwable t) {
-                        throw new RuntimeException(t);
+                    public void failed(State from, Throwable failure) {
+                        throw new RuntimeException(failure);
                     }
-                });
+                }, MoreExecutors.sameThreadExecutor());
             }
         } catch (BlockStoreException e) {
             throw new IOException(e);
@@ -256,15 +275,20 @@ public class WalletAppKit extends AbstractIdleService {
         }
     }
 
-    protected PeerGroup createPeerGroup() {
-        return new PeerGroup(params, vChain);
+    protected PeerGroup createPeerGroup() throws TimeoutException {
+        if (useTor) {
+            return PeerGroup.newWithTor(params, vChain, new TorClient());
+        }
+        else
+            return new PeerGroup(params, vChain);
     }
 
     private void installShutdownHook() {
         if (autoStop) Runtime.getRuntime().addShutdownHook(new Thread() {
             @Override public void run() {
                 try {
-                    WalletAppKit.this.stopAndWait();
+                    WalletAppKit.this.stopAsync();
+                    WalletAppKit.this.awaitTerminated();
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }
@@ -276,7 +300,8 @@ public class WalletAppKit extends AbstractIdleService {
     protected void shutDown() throws Exception {
         // Runs in a separate thread.
         try {
-            vPeerGroup.stopAndWait();
+            vPeerGroup.stopAsync();
+            vPeerGroup.awaitTerminated();
             vWallet.saveToFile(vWalletFile);
             vStore.close();
 

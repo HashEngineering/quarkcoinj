@@ -1,5 +1,5 @@
 /*
- * Copyright 2012 the original author or authors.
+ * Copyright 2012, 2014 the original author or authors.
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,6 +29,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URLDecoder;
 import java.util.LinkedHashMap;
+import java.util.Locale;
 import java.util.Map;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -193,14 +194,16 @@ public class BitcoinURI {
     private void parseParameters(@Nullable NetworkParameters params, String addressToken, String[] nameValuePairTokens) throws BitcoinURIParseException {
         // Attempt to decode the rest of the tokens into a parameter map.
         for (String nameValuePairToken : nameValuePairTokens) {
-            String[] tokens = nameValuePairToken.split("=");
-            if (tokens.length != 2 || "".equals(tokens[0])) {
-                throw new BitcoinURIParseException("Malformed "+CoinDefinition.coinName +" URI - cannot parse name value pair '" +
-                        nameValuePairToken + "'");
-            }
 
-            String nameToken = tokens[0].toLowerCase();
-            String valueToken = tokens[1];
+            final int sepIndex = nameValuePairToken.indexOf('=');
+            if (sepIndex == -1)
+                throw new BitcoinURIParseException("Malformed "+CoinDefinition.coinName +" URI - no separator in '" +
+                        nameValuePairToken + "'");
+            if (sepIndex == 0)
+                throw new BitcoinURIParseException("Malformed "+CoinDefinition.coinName +" URI - empty name '" +
+                        nameValuePairToken + "'");
+            final String nameToken = nameValuePairToken.substring(0, sepIndex).toLowerCase(Locale.ENGLISH);
+            final String valueToken = nameValuePairToken.substring(sepIndex + 1);
 
             // Parse the amount.
             if (FIELD_AMOUNT.equals(nameToken)) {
@@ -220,7 +223,8 @@ public class BitcoinURI {
                 } else {
                     // Known fields and unknown parameters that are optional.
                     try {
-                        putWithValidation(nameToken, URLDecoder.decode(valueToken, "UTF-8"));
+                        if (valueToken.length() > 0)
+                            putWithValidation(nameToken, URLDecoder.decode(valueToken, "UTF-8"));
                     } catch (UnsupportedEncodingException e) {
                         // Unreachable.
                         throw new RuntimeException(e);

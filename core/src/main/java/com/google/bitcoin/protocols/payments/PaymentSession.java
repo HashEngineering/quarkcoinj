@@ -1,7 +1,4 @@
 /**
- * Copyright 2013 Google Inc.
- * Copyright 2014 Andreas Schildbach
- *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -18,31 +15,24 @@
 package com.google.bitcoin.protocols.payments;
 
 import com.google.bitcoin.core.*;
+import com.google.bitcoin.crypto.TrustStoreLoader;
 import com.google.bitcoin.params.MainNetParams;
+import com.google.bitcoin.protocols.payments.PaymentProtocol.PkiVerificationData;
 import com.google.bitcoin.script.ScriptBuilder;
 import com.google.bitcoin.uri.BitcoinURI;
 import com.google.bitcoin.utils.Threading;
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Joiner;
-import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import org.bitcoin.protocols.payments.Protos;
-import org.spongycastle.asn1.ASN1String;
-import org.spongycastle.asn1.x500.AttributeTypeAndValue;
-import org.spongycastle.asn1.x500.RDN;
-import org.spongycastle.asn1.x500.X500Name;
-import org.spongycastle.asn1.x500.style.RFC4519Style;
 
 import javax.annotation.Nullable;
-import javax.security.auth.x500.X500Principal;
 import java.io.*;
 import java.math.BigInteger;
 import java.net.*;
-import java.security.*;
-import java.security.cert.*;
+import java.security.KeyStoreException;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -72,23 +62,21 @@ import java.util.concurrent.Callable;
  * as a confirmation message that the payment is now "processing" or that an error occurred, and then broadcast the
  * tx itself later if needed.</p>
  *
- * @author Kevin Greene
- * @author Andreas Schildbach
  * @see <a href="https://github.com/bitcoin/bips/blob/master/bip-0070.mediawiki">BIP 0070</a>
  */
 public class PaymentSession {
     private static ListeningExecutorService executor = Threading.THREAD_POOL;
     private NetworkParameters params;
-    private String trustStorePath;
+    private final TrustStoreLoader trustStoreLoader;
     private Protos.PaymentRequest paymentRequest;
     private Protos.PaymentDetails paymentDetails;
     private BigInteger totalValue = BigInteger.ZERO;
 
     /**
      * Stores the calculated PKI verification data, or null if none is available.
-     * Only valid after the session is created with verifyPki set to true, or verifyPki() is manually called.
+     * Only valid after the session is created with the verifyPki parameter set to true.
      */
-    public PkiVerificationData pkiVerificationData;
+    @Nullable public final PkiVerificationData pkiVerificationData;
 
     /**
      * Returns a future that will be notified with a PaymentSession object after it is fetched using the provided uri.
@@ -122,16 +110,15 @@ public class PaymentSession {
      * If verifyPki is specified and the payment request object specifies a PKI method, then the system trust store will
      * be used to verify the signature provided by the payment request. An exception is thrown by the future if the
      * signature cannot be verified.
-     * If trustStorePath is not null, the trust store used for PKI verification will be loaded from the given location
-     * instead of using the system default trust store location.
+     * If trustStoreLoader is null, the system default trust store is used.
      */
-    public static ListenableFuture<PaymentSession> createFromBitcoinUri(final BitcoinURI uri, final boolean verifyPki, @Nullable final String trustStorePath)
+    public static ListenableFuture<PaymentSession> createFromBitcoinUri(final BitcoinURI uri, final boolean verifyPki, @Nullable final TrustStoreLoader trustStoreLoader)
             throws PaymentRequestException {
         String url = uri.getPaymentRequestUrl();
         if (url == null)
             throw new PaymentRequestException.InvalidPaymentRequestURL("No payment request URL (r= parameter) in BitcoinURI " + uri);
         try {
-            return fetchPaymentRequest(new URI(url), verifyPki, trustStorePath);
+            return fetchPaymentRequest(new URI(url), verifyPki, trustStoreLoader);
         } catch (URISyntaxException e) {
             throw new PaymentRequestException.InvalidPaymentRequestURL(e);
         }
@@ -166,29 +153,28 @@ public class PaymentSession {
      * If the payment request object specifies a PKI method, then the system trust store will
      * be used to verify the signature provided by the payment request. An exception is thrown by the future if the
      * signature cannot be verified.
-     * If trustStorePath is not null, the trust store used for PKI verification will be loaded from the given location
-     * instead of using the system default trust store location.
+     * If trustStoreLoader is null, the system default trust store is used.
      */
-    public static ListenableFuture<PaymentSession> createFromUrl(final String url, final boolean verifyPki, @Nullable final String trustStorePath)
+    public static ListenableFuture<PaymentSession> createFromUrl(final String url, final boolean verifyPki, @Nullable final TrustStoreLoader trustStoreLoader)
             throws PaymentRequestException {
         if (url == null)
             throw new PaymentRequestException.InvalidPaymentRequestURL("null paymentRequestUrl");
         try {
-            return fetchPaymentRequest(new URI(url), verifyPki, trustStorePath);
+            return fetchPaymentRequest(new URI(url), verifyPki, trustStoreLoader);
         } catch(URISyntaxException e) {
             throw new PaymentRequestException.InvalidPaymentRequestURL(e);
         }
     }
 
-    private static ListenableFuture<PaymentSession> fetchPaymentRequest(final URI uri, final boolean verifyPki, @Nullable final String trustStorePath) {
+    private static ListenableFuture<PaymentSession> fetchPaymentRequest(final URI uri, final boolean verifyPki, @Nullable final TrustStoreLoader trustStoreLoader) {
         return executor.submit(new Callable<PaymentSession>() {
             @Override
             public PaymentSession call() throws Exception {
                 HttpURLConnection connection = (HttpURLConnection)uri.toURL().openConnection();
-                connection.setRequestProperty("Accept", "application/"+CoinDefinition.coinName +"-paymentrequest");
+                connection.setRequestProperty("Accept", PaymentProtocol.MIMETYPE_PAYMENTREQUEST);
                 connection.setUseCaches(false);
                 Protos.PaymentRequest paymentRequest = Protos.PaymentRequest.parseFrom(connection.getInputStream());
-                return new PaymentSession(paymentRequest, verifyPki, trustStorePath);
+                return new PaymentSession(paymentRequest, verifyPki, trustStoreLoader);
             }
         });
     }
@@ -198,8 +184,7 @@ public class PaymentSession {
      * Verifies PKI by default.
      */
     public PaymentSession(Protos.PaymentRequest request) throws PaymentRequestException {
-        parsePaymentRequest(request);
-        verifyPki();
+        this(request, true, null);
     }
 
     /**
@@ -207,22 +192,28 @@ public class PaymentSession {
      * If verifyPki is true, also validates the signature and throws an exception if it fails.
      */
     public PaymentSession(Protos.PaymentRequest request, boolean verifyPki) throws PaymentRequestException {
-        parsePaymentRequest(request);
-        if (verifyPki)
-            verifyPki();
+        this(request, verifyPki, null);
     }
 
     /**
      * Creates a PaymentSession from the provided {@link Protos.PaymentRequest}.
      * If verifyPki is true, also validates the signature and throws an exception if it fails.
-     * If trustStorePath is not null, the trust store used for PKI verification will be loaded from the given location
-     * instead of using the system default trust store location.
+     * If trustStoreLoader is null, the system default trust store is used.
      */
-    public PaymentSession(Protos.PaymentRequest request, boolean verifyPki, @Nullable final String trustStorePath) throws PaymentRequestException {
-        this.trustStorePath = trustStorePath;
+    public PaymentSession(Protos.PaymentRequest request, boolean verifyPki, @Nullable final TrustStoreLoader trustStoreLoader) throws PaymentRequestException {
+        this.trustStoreLoader = trustStoreLoader != null ? trustStoreLoader : new TrustStoreLoader.DefaultTrustStoreLoader();
         parsePaymentRequest(request);
-        if (verifyPki)
-            verifyPki();
+        if (verifyPki) {
+            try {
+                pkiVerificationData = PaymentProtocol.verifyPaymentRequestPki(request, this.trustStoreLoader.getKeyStore());
+            } catch (IOException x) {
+                throw new PaymentRequestException(x);
+            } catch (KeyStoreException x) {
+                throw new PaymentRequestException(x);
+            }
+        } else {
+            pkiVerificationData = null;
+        }
     }
 
     /**
@@ -363,8 +354,9 @@ public class PaymentSession {
             public Ack call() throws Exception {
                 HttpURLConnection connection = (HttpURLConnection) url.openConnection();
                 connection.setRequestMethod("POST");
-                connection.setRequestProperty("Content-Type", "application/"+CoinDefinition.coinName +"-payment");
-                connection.setRequestProperty("Accept", "application/"+CoinDefinition.coinName +"-paymentack");
+
+                connection.setRequestProperty("Content-Type", PaymentProtocol.MIMETYPE_PAYMENT);
+                connection.setRequestProperty("Accept", PaymentProtocol.MIMETYPE_PAYMENTACK);
                 connection.setRequestProperty("Content-Length", Integer.toString(payment.getSerializedSize()));
                 connection.setUseCaches(false);
                 connection.setDoInput(true);
@@ -386,211 +378,6 @@ public class PaymentSession {
                 return new Ack(memo);
             }
         });
-    }
-
-    /**
-     * Information about the X509 signature's issuer and subject.
-     */
-    public static class PkiVerificationData {
-        /** Display name of the payment requestor, could be a domain name, email address, legal name, etc */
-        public final String name;
-        /** The "org" part of the payment requestors ID. */
-        public final String orgName;
-        /** SSL public key that was used to sign. */
-        public final PublicKey merchantSigningKey;
-        /** Object representing the CA that verified the merchant's ID */
-        public final TrustAnchor rootAuthority;
-        /** String representing the display name of the CA that verified the merchant's ID */
-        public final String rootAuthorityName;
-
-        private PkiVerificationData(@Nullable String name, @Nullable String orgName, PublicKey merchantSigningKey,
-                                    TrustAnchor rootAuthority) throws PaymentRequestException.PkiVerificationException {
-            this.name = name;
-            this.orgName = orgName;
-            this.merchantSigningKey = merchantSigningKey;
-            this.rootAuthority = rootAuthority;
-            this.rootAuthorityName = getNameFromCert(rootAuthority);
-        }
-
-        private @Nullable String getNameFromCert(TrustAnchor rootAuthority) throws PaymentRequestException.PkiVerificationException {
-            org.spongycastle.asn1.x500.X500Name name = new X500Name(rootAuthority.getTrustedCert().getSubjectX500Principal().getName());
-            String commonName = null, org = null, location = null, country = null;
-            for (RDN rdn : name.getRDNs()) {
-                AttributeTypeAndValue pair = rdn.getFirst();
-                String val = ((ASN1String)pair.getValue()).getString();
-                if (pair.getType().equals(RFC4519Style.cn))
-                    commonName = val;
-                else if (pair.getType().equals(RFC4519Style.o))
-                    org = val;
-                else if (pair.getType().equals(RFC4519Style.l))
-                    location = val;
-                else if (pair.getType().equals(RFC4519Style.c))
-                    country = val;
-            }
-            if (org != null) {
-                return Joiner.on(", ").skipNulls().join(org, location, country);
-            } else {
-                return commonName;
-            }
-        }
-    }
-
-    /**
-     * Uses the provided PKI method to find the corresponding public key and verify the provided signature.
-     * Returns null if no PKI method was specified in the {@link Protos.PaymentRequest}.
-     */
-    public @Nullable PkiVerificationData verifyPki() throws PaymentRequestException {
-        try {
-            if (pkiVerificationData != null)
-                return pkiVerificationData;
-            if (paymentRequest.getPkiType().equals("none"))
-                // Nothing to verify. Everything is fine. Move along.
-                return null;
-
-            String algorithm;
-            if (paymentRequest.getPkiType().equals("x509+sha256"))
-                algorithm = "SHA256withRSA";
-            else if (paymentRequest.getPkiType().equals("x509+sha1"))
-                algorithm = "SHA1withRSA";
-            else
-                throw new PaymentRequestException.InvalidPkiType("Unsupported PKI type: " + paymentRequest.getPkiType());
-
-            Protos.X509Certificates protoCerts = Protos.X509Certificates.parseFrom(paymentRequest.getPkiData());
-            if (protoCerts.getCertificateCount() == 0)
-                throw new PaymentRequestException.InvalidPkiData("No certificates provided in message: server config error");
-
-            // Parse the certs and turn into a certificate chain object. Cert factories can parse both DER and base64.
-            // The ordering of certificates is defined by the payment protocol spec to be the same as what the Java
-            // crypto API requires - convenient!
-            CertificateFactory certificateFactory = CertificateFactory.getInstance("X.509");
-            List<X509Certificate> certs = Lists.newArrayList();
-            for (ByteString bytes : protoCerts.getCertificateList())
-                certs.add((X509Certificate) certificateFactory.generateCertificate(bytes.newInput()));
-            CertPath path = certificateFactory.generateCertPath(certs);
-
-            // Retrieves the most-trusted CAs from keystore.
-            PKIXParameters params = new PKIXParameters(createKeyStore(trustStorePath));
-            // Revocation not supported in the current version.
-            params.setRevocationEnabled(false);
-
-            // Now verify the certificate chain is correct and trusted. This let's us get an identity linked pubkey.
-            CertPathValidator validator = CertPathValidator.getInstance("PKIX");
-            PKIXCertPathValidatorResult result = (PKIXCertPathValidatorResult) validator.validate(path, params);
-            PublicKey publicKey = result.getPublicKey();
-            // OK, we got an identity, now check it was used to sign this message.
-            Signature signature = Signature.getInstance(algorithm);
-            // Note that we don't use signature.initVerify(certs.get(0)) here despite it being the most obvious
-            // way to set it up, because we don't care about the constraints specified on the certificates: any
-            // cert that links a key to a domain name or other identity will do for us.
-            signature.initVerify(publicKey);
-            Protos.PaymentRequest.Builder reqToCheck = paymentRequest.toBuilder();
-            reqToCheck.setSignature(ByteString.EMPTY);
-            signature.update(reqToCheck.build().toByteArray());
-            if (!signature.verify(paymentRequest.getSignature().toByteArray()))
-                throw new PaymentRequestException.PkiVerificationException("Invalid signature, this payment request is not valid.");
-
-            // Signature verifies, get the names from the identity we just verified for presentation to the user.
-            X500Principal principal = certs.get(0).getSubjectX500Principal();
-            // At this point the Java crypto API falls flat on its face and dies - there's no clean way to get the
-            // different parts of the certificate name except for parsing the string. That's hard because of various
-            // custom escaping rules and the usual crap. So, use Bouncy Castle to re-parse the string into binary form
-            // again and then look for the names we want. Fail!
-            org.spongycastle.asn1.x500.X500Name name = new X500Name(principal.getName());
-            String entityName = null, orgName = null;
-            for (RDN rdn : name.getRDNs()) {
-                AttributeTypeAndValue pair = rdn.getFirst();
-                if (pair.getType().equals(RFC4519Style.cn))
-                    entityName = ((ASN1String)pair.getValue()).getString();
-                else if (pair.getType().equals(RFC4519Style.o))
-                    orgName = ((ASN1String)pair.getValue()).getString();
-            }
-            if (entityName == null && orgName == null)
-                throw new PaymentRequestException.PkiVerificationException("Invalid certificate, no CN or O fields");
-            // Everything is peachy. Return some useful data to the caller.
-            PkiVerificationData data = new PkiVerificationData(entityName, orgName, publicKey, result.getTrustAnchor());
-            // Cache the result so we don't have to re-verify if this method is called again.
-            pkiVerificationData = data;
-            return data;
-        } catch (InvalidProtocolBufferException e) {
-            // Data structures are malformed.
-            throw new PaymentRequestException.InvalidPkiData(e);
-        } catch (CertificateException e) {
-            // The X.509 certificate data didn't parse correctly.
-            throw new PaymentRequestException.PkiVerificationException(e);
-        } catch (NoSuchAlgorithmException e) {
-            // Should never happen so don't make users have to think about it. PKIX is always present.
-            throw new RuntimeException(e);
-        } catch (InvalidAlgorithmParameterException e) {
-            throw new RuntimeException(e);
-        } catch (CertPathValidatorException e) {
-            // The certificate chain isn't known or trusted, probably, the server is using an SSL root we don't
-            // know about and the user needs to upgrade to a new version of the software (or import a root cert).
-            throw new PaymentRequestException.PkiVerificationException(e);
-        } catch (InvalidKeyException e) {
-            // Shouldn't happen if the certs verified correctly.
-            throw new PaymentRequestException.PkiVerificationException(e);
-        } catch (SignatureException e) {
-            // Something went wrong during hashing (yes, despite the name, this does not mean the sig was invalid).
-            throw new PaymentRequestException.PkiVerificationException(e);
-        } catch (IOException e) {
-            throw new PaymentRequestException.PkiVerificationException(e);
-        } catch (KeyStoreException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    private KeyStore createKeyStore(@Nullable String path)
-            throws IOException, KeyStoreException, NoSuchAlgorithmException, CertificateException {
-        String keyStoreType = KeyStore.getDefaultType();
-        char[] defaultPassword = "changeit".toCharArray();
-        if (path != null) {
-            // If the user provided path, only try to load the keystore at that path.
-            KeyStore keyStore = KeyStore.getInstance(keyStoreType);
-            FileInputStream is = new FileInputStream(path);
-            keyStore.load(is, defaultPassword);
-            return keyStore;
-        }
-        try {
-            // Check if we are on Android.
-            Class version = Class.forName("android.os.Build$VERSION");
-            // Build.VERSION_CODES.ICE_CREAM_SANDWICH is 14.
-            if (version.getDeclaredField("SDK_INT").getInt(version) >= 14) {
-                // After ICS, Android provided this nice method for loading the keystore,
-                // so we don't have to specify the location explicitly.
-                KeyStore keystore = KeyStore.getInstance("AndroidCAStore");
-                keystore.load(null, null);
-                return keystore;
-            } else {
-                keyStoreType = "BKS";
-                path = System.getProperty("java.home") + "/etc/security/cacerts.bks".replace('/', File.separatorChar);
-            }
-        } catch (ClassNotFoundException e) {
-            // NOP. android.os.Build is not present, so we are not on Android. Fall through.
-        } catch (NoSuchFieldException e) {
-            throw new RuntimeException(e);   // Should never happen.
-        } catch (IllegalAccessException e) {
-            throw new RuntimeException(e);   // Should never happen.
-        }
-        if (path == null) {
-            path = System.getProperty("javax.net.ssl.trustStore");
-        }
-        if (path == null) {
-            // Try this default system location for Linux/Windows/OSX.
-            path = System.getProperty("java.home") + "/lib/security/cacerts".replace('/', File.separatorChar);
-        }
-        try {
-            KeyStore keyStore = KeyStore.getInstance(keyStoreType);
-            FileInputStream is = new FileInputStream(path);
-            keyStore.load(is, defaultPassword);
-            return keyStore;
-        } catch (FileNotFoundException e) {
-            // If we failed to find a system trust store, load our own fallback trust store. This can fail on Android
-            // but we should never reach it there.
-            KeyStore keyStore = KeyStore.getInstance("JKS");
-            InputStream is = getClass().getResourceAsStream("cacerts");
-            keyStore.load(is, defaultPassword);
-            return keyStore;
-        }
     }
 
     private void parsePaymentRequest(Protos.PaymentRequest request) throws PaymentRequestException {
@@ -624,6 +411,16 @@ public class PaymentSession {
         } catch (InvalidProtocolBufferException e) {
             throw new PaymentRequestException(e);
         }
+    }
+
+    /** Returns the value of pkiVerificationData or null if it wasn't verified at construction time. */
+    @Nullable public PkiVerificationData verifyPki() {
+        return pkiVerificationData;
+    }
+
+    /** Gets the params as read from the PaymentRequest.network field: main is the default if missing. */
+    public NetworkParameters getNetworkParameters() {
+        return params;
     }
 
     /** Returns the protobuf that this object was instantiated with. */

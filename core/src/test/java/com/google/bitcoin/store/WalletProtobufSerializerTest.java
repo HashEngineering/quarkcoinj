@@ -1,3 +1,20 @@
+/**
+ * Copyright 2012 Google Inc.
+ * Copyright 2014 Andreas Schildbach
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.google.bitcoin.store;
 
 
@@ -6,8 +23,8 @@ import com.google.bitcoin.core.TransactionConfidence.ConfidenceType;
 import com.google.bitcoin.params.MainNetParams;
 import com.google.bitcoin.params.UnitTestParams;
 import com.google.bitcoin.script.ScriptBuilder;
+import com.google.bitcoin.testing.FakeTxBuilder;
 import com.google.bitcoin.utils.BriefLogFormatter;
-import com.google.bitcoin.utils.TestUtils;
 import com.google.bitcoin.utils.Threading;
 import com.google.protobuf.ByteString;
 import org.bitcoinj.wallet.Protos;
@@ -23,7 +40,7 @@ import java.util.Date;
 import java.util.Iterator;
 import java.util.Set;
 
-import static com.google.bitcoin.utils.TestUtils.createFakeTx;
+import static com.google.bitcoin.testing.FakeTxBuilder.createFakeTx;
 import static org.junit.Assert.*;
 
 public class WalletProtobufSerializerTest {
@@ -108,7 +125,7 @@ public class WalletProtobufSerializerTest {
     @Test
     public void doubleSpend() throws Exception {
         // Check that we can serialize double spends correctly, as this is a slightly tricky case.
-        TestUtils.DoubleSpends doubleSpends = TestUtils.createFakeDoubleSpendTxns(params, myAddress);
+        FakeTxBuilder.DoubleSpends doubleSpends = FakeTxBuilder.createFakeDoubleSpendTxns(params, myAddress);
         // t1 spends to our wallet.
         myWallet.receivePending(doubleSpends.t1, null);
         // t2 rolls back t1 and spends somewhere else.
@@ -246,6 +263,8 @@ public class WalletProtobufSerializerTest {
         ByteArrayOutputStream output = new ByteArrayOutputStream();
         //System.out.println(WalletProtobufSerializer.walletToText(wallet));
         new WalletProtobufSerializer().writeWallet(wallet, output);
+        ByteArrayInputStream test = new ByteArrayInputStream(output.toByteArray());
+        assertTrue(WalletProtobufSerializer.isWallet(test));
         ByteArrayInputStream input = new ByteArrayInputStream(output.toByteArray());
         return new WalletProtobufSerializer().readWallet(input);
     }

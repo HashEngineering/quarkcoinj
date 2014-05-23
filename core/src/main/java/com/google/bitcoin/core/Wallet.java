@@ -162,15 +162,15 @@ public class Wallet implements Serializable, BlockChainListener, PeerFilterProvi
     private int onWalletChangedSuppressions;
     private boolean insideReorg;
     private Map<Transaction, TransactionConfidence.Listener.ChangeReason> confidenceChanged;
-    private volatile WalletFiles vFileManager;
+    protected volatile WalletFiles vFileManager;
     // Object that is used to send transactions asynchronously when the wallet requires it.
-    private volatile TransactionBroadcaster vTransactionBroadcaster;
+    protected volatile TransactionBroadcaster vTransactionBroadcaster;
     // UNIX time in seconds. Money controlled by keys created before this time will be automatically respent to a key
     // that was created after it. Useful when you believe some keys have been compromised.
     private volatile long vKeyRotationTimestamp;
     private volatile boolean vKeyRotationEnabled;
 
-    private transient CoinSelector coinSelector = new DefaultCoinSelector();
+    protected transient CoinSelector coinSelector = new DefaultCoinSelector();
 
     // The keyCrypter for the wallet. This specifies the algorithm used for encrypting and decrypting the private keys.
     private KeyCrypter keyCrypter;
@@ -437,14 +437,34 @@ public class Wallet implements Serializable, BlockChainListener, PeerFilterProvi
         }
     }
 
-    private void saveLater() {
+    /**
+     * <p>
+     * Disables auto-saving, after it had been enabled with
+     * {@link Wallet#autosaveToFile(java.io.File, long, java.util.concurrent.TimeUnit, com.google.bitcoin.wallet.WalletFiles.Listener)}
+     * before. This method blocks until finished.
+     * </p>
+     */
+    public void shutdownAutosaveAndWait() {
+        lock.lock();
+        try {
+            WalletFiles files = vFileManager;
+            vFileManager = null;
+            checkState(files != null, "Auto saving not enabled.");
+            files.shutdownAndWait();
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    /** Requests an asynchronous save on a background thread */
+    protected void saveLater() {
         WalletFiles files = vFileManager;
         if (files != null)
             files.saveLater();
     }
 
     /** If auto saving is enabled, do an immediate sync write to disk ignoring any delays. */
-    private void saveNow() {
+    protected void saveNow() {
         WalletFiles files = vFileManager;
         if (files != null) {
             try {
@@ -1904,6 +1924,7 @@ public class Wallet implements Serializable, BlockChainListener, PeerFilterProvi
                 checkState(req.tx.getOutputs().size() == 1, "Empty wallet TX must have a single output only.");
                 CoinSelector selector = req.coinSelector == null ? coinSelector : req.coinSelector;
                 bestCoinSelection = selector.select(NetworkParameters.MAX_MONEY, candidates);
+                candidates = null;  // Selector took ownership and might have changed candidates. Don't access again.
                 req.tx.getOutput(0).setValue(bestCoinSelection.valueGathered);
                 totalOutput = bestCoinSelection.valueGathered;
             }
@@ -2094,7 +2115,7 @@ public class Wallet implements Serializable, BlockChainListener, PeerFilterProvi
      * Same as {@link #addWatchedAddress(Address, long)} with the current time as the creation time.
      */
     public boolean addWatchedAddress(final Address address) {
-        long now = Utils.currentTimeMillis() / 1000;
+        long now = Utils.currentTimeSeconds();
         return addWatchedAddresses(Lists.newArrayList(address), now) == 1;
     }
 
@@ -2645,7 +2666,7 @@ public class Wallet implements Serializable, BlockChainListener, PeerFilterProvi
             for (Script script : watchedScripts)
                 earliestTime = Math.min(script.getCreationTimeSeconds(), earliestTime);
             if (earliestTime == Long.MAX_VALUE)
-                return Utils.currentTimeMillis() / 1000;
+                return Utils.currentTimeSeconds();
             return earliestTime;
         } finally {
             lock.unlock();
@@ -3432,7 +3453,8 @@ public class Wallet implements Serializable, BlockChainListener, PeerFilterProvi
 
                 // Of the coins we could spend, pick some that we actually will spend.
                 CoinSelector selector = req.coinSelector == null ? coinSelector : req.coinSelector;
-                CoinSelection selection = selector.select(valueNeeded, candidates);
+                // selector is allowed to modify candidates list.
+                CoinSelection selection = selector.select(valueNeeded, new LinkedList<TransactionOutput>(candidates));
                 // Can we afford this?
                 if (selection.valueGathered.compareTo(valueNeeded) < 0) {
                     valueMissing = valueNeeded.subtract(selection.valueGathered);
