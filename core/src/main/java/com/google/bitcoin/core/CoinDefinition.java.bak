@@ -22,8 +22,6 @@ public class CoinDefinition {
     public static final String cryptsyMarketCurrency = "BTC";
     public static final String PATTERN_PRIVATE_KEY_START = "6";
 
-    public static String lowerCaseCoinName() { return coinName.toLowerCase(); }
-
     public enum CoinPrecision {
         Coins,
         Millicoins,
