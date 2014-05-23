@@ -1,5 +1,6 @@
 /**
  * Copyright 2013 Google Inc.
+ * Copyright 2014 Andreas Schildbach
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +18,7 @@
 package com.google.bitcoin.protocols.payments;
 
 import com.google.bitcoin.core.*;
+import com.google.bitcoin.crypto.TrustStoreLoader;
 import com.google.bitcoin.params.TestNet3Params;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.protobuf.ByteString;
@@ -83,6 +85,23 @@ public class PaymentSessionTest {
     }
 
     @Test
+    public void testDefaults() throws Exception {
+        Protos.Output.Builder outputBuilder = Protos.Output.newBuilder()
+                .setScript(ByteString.copyFrom(outputToMe.getScriptBytes()));
+        Protos.PaymentDetails paymentDetails = Protos.PaymentDetails.newBuilder()
+                .setTime(time)
+                .addOutputs(outputBuilder)
+                .build();
+        Protos.PaymentRequest paymentRequest = Protos.PaymentRequest.newBuilder()
+                .setSerializedPaymentDetails(paymentDetails.toByteString())
+                .build();
+        MockPaymentSession paymentSession = new MockPaymentSession(paymentRequest);
+        assertEquals(BigInteger.ZERO, paymentSession.getValue());
+        assertNull(paymentSession.getPaymentUrl());
+        assertNull(paymentSession.getMemo());
+    }
+
+    @Test
     public void testExpiredPaymentRequest() throws Exception {
         MockPaymentSession paymentSession = new MockPaymentSession(newExpiredPaymentRequest());
         assertTrue(paymentSession.isExpired());
@@ -105,9 +124,10 @@ public class PaymentSessionTest {
     public void testPkiVerification() throws Exception {
         InputStream in = getClass().getResourceAsStream("pki_test.bitcoinpaymentrequest");
         Protos.PaymentRequest paymentRequest = Protos.PaymentRequest.newBuilder().mergeFrom(in).build();
-        MockPaymentSession paymentSession = new MockPaymentSession(paymentRequest);
-        PaymentSession.PkiVerificationData pkiData = paymentSession.verifyPki();
-        assertEquals("www.bitcoincore.org", pkiData.name);
+        PaymentProtocol.PkiVerificationData pkiData = PaymentProtocol.verifyPaymentRequestPki(paymentRequest,
+                new TrustStoreLoader.DefaultTrustStoreLoader().getKeyStore());
+        assertEquals("www.bitcoincore.org", pkiData.displayName);
+        assertEquals("The USERTRUST Network, Salt Lake City, US", pkiData.rootAuthorityName);
     }
 
     private Protos.PaymentRequest newSimplePaymentRequest() {

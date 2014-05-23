@@ -1,5 +1,6 @@
 /**
  * Copyright 2013 Google Inc.
+ * Copyright 2014 Andreas Schildbach
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,7 +44,7 @@ public class ForwardingService {
     public static void main(String[] args) throws Exception {
         // This line makes the log output more compact and easily read, especially when using the JDK log adapter.
         BriefLogFormatter.init();
-        if (args.length < 2) {
+        if (args.length < 1) {
             System.err.println("Usage: address-to-send-back-to [regtest|testnet]");
             return;
         }
@@ -51,10 +52,10 @@ public class ForwardingService {
         // Figure out which network we should connect to. Each one gets its own set of files.
         NetworkParameters params;
         String filePrefix;
-        if (args[1].equals("testnet")) {
+        if (args.length > 1 && args[1].equals("testnet")) {
             params = TestNet3Params.get();
             filePrefix = "forwarding-service-testnet";
-        } else if (args[1].equals("regtest")) {
+        } else if (args.length > 1 && args[1].equals("regtest")) {
             params = RegTestParams.get();
             filePrefix = "forwarding-service-regtest";
         } else {
@@ -74,7 +75,8 @@ public class ForwardingService {
         }
 
         // Download the block chain and wait until it's done.
-        kit.startAndWait();
+        kit.startAsync();
+        kit.awaitRunning();
 
         // We want to know when we receive money.
         kit.wallet().addEventListener(new AbstractWalletEventListener() {

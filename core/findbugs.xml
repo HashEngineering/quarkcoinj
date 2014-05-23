@@ -20,7 +20,7 @@
 	    <Package name="org.bitcoin.protocols.payments"/>
     </Match>
 
-    <!-- digitalcoinj is not designed to run in an environment with malicious code loaded into the VM -->
+    <!-- quarkcoinj is not designed to run in an environment with malicious code loaded into the VM -->
     <Match>
         <Bug category="MALICIOUS_CODE"/>
     </Match>

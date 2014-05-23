@@ -21,7 +21,7 @@ import java.io.OutputStream;
 
 public class Pong extends Message {
     /** The smallest protocol version that supports the pong response (BIP 31). Anything beyond version 60000. */
-    public static final int MIN_PROTOCOL_VERSION = CoinDefinition.MIN_PROTOCOL_VERSION;//60001;
+    public static final int MIN_PROTOCOL_VERSION = /*CoinDefinition.MIN_PROTOCOL_VERSION;//*/60001;
 
     private long nonce;
 
@@ -50,8 +50,9 @@ public class Pong extends Message {
     @Override
     protected void parseLite() {
     }
-    
-    long getNonce() {
+
+    /** Returns the nonce sent by the remote peer. */
+    public long getNonce() {
         return nonce;
     }
 }

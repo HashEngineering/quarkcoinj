@@ -1,0 +1,5 @@
+The code is now at https://www.github.com/bitcoinj/bitcoinj
+
+You can fix your repo by doing:
+
+git remote set-url origin https://github.com/bitcoinj/bitcoinj.git

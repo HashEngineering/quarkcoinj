@@ -39,7 +39,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
  * A deterministic key is a node in a {@link DeterministicHierarchy}. As per
- * <a href="https://en.bitcoin.it/wiki/BIP_0032">the BIP 32 specification</a> it is a pair (key, chaincode). If you
+ * <a href="https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki">the BIP 32 specification</a> it is a pair (key, chaincode). If you
  * know its path in the tree you can derive more keys from this.
  */
 public class DeterministicKey implements Serializable {
@@ -61,7 +61,7 @@ public class DeterministicKey implements Serializable {
         this.parent = parent;
         this.childNumberPath = childNumberPath;
         this.chainCode = Arrays.copyOf(chainCode, chainCode.length);
-        this.publicAsPoint = publicAsPoint == null ? null : HDUtils.compressedCopy(publicAsPoint);
+        this.publicAsPoint = publicAsPoint == null ? null : publicAsPoint.normalize();
         this.privateAsFieldElement = privateKeyFieldElt;
     }
 
@@ -109,13 +109,13 @@ public class DeterministicKey implements Serializable {
     ECPoint getPubPoint() {
         if (publicAsPoint == null) {
             checkNotNull(privateAsFieldElement);
-            publicAsPoint = ECKey.CURVE.getG().multiply(privateAsFieldElement);
+            publicAsPoint = ECKey.CURVE.getG().multiply(privateAsFieldElement).normalize();
         }
-        return HDUtils.compressedCopy(publicAsPoint);
+        return publicAsPoint;
     }
 
     public byte[] getPubKeyBytes() {
-        return getPubPoint().getEncoded();
+        return getPubPoint().getEncoded(true);
     }
 
 

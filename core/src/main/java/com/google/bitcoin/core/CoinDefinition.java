@@ -33,6 +33,8 @@ public class CoinDefinition {
     public static final String cryptsyMarketCurrency = "BTC";
     public static final String PATTERN_PRIVATE_KEY_START = "[Q6]";
 
+    public static String lowerCaseCoinName() { return coinName.toLowerCase(); }
+
     public enum CoinPrecision {
         Coins,
         Millicoins,
@@ -44,8 +46,12 @@ public class CoinDefinition {
     //public static final String BLOCKEXPLORER_BASE_URL_TEST = "http://quarkexplorer.com/";
     public static final String BLOCKEXPLORER_BASE_URL_PROD = "http://qrk.blockr.io/";
     public static final String BLOCKEXPLORER_BASE_URL_TEST = "http://qrk.blockr.io/";
-    public static final String BLOCKEXPLORER_PATH_URL_PROD = "block/info/";
+    public static final String BLOCKEXPLORER_BLOCK_PATH = "block/info/";
+    public static final String BLOCKEXPLORER_TRANSACTION_PATH = "tx/info/";
+    public static final String BLOCKEXPLORER_ADDRESS_PATH = "address/info/";
+
     public static final String BLOCKEXPLORER_PATH_URL_TEST = "block/info/";
+
 
     public static final String DONATION_ADDRESS = "QVJZByN6HdrTuEjAbgXpAnEUxUeeUaoEcA";  //HashEngineering donation QRK address
 
@@ -65,6 +71,10 @@ public class CoinDefinition {
     public static final int getInterval(int height, boolean testNet) {
             return INTERVAL;
     }
+    public static final int getIntervalCheckpoints() {
+            return INTERVAL*100;
+
+    }
     public static final int getTargetTimespan(int height, boolean testNet) {
             return TARGET_TIMESPAN;
     }
@@ -78,12 +88,12 @@ public class CoinDefinition {
     }
     public static int spendableCoinbaseDepth = 240; //main.h: static const int COINBASE_MATURITY
 
+    public static final BigInteger MAX_MONEY = BigInteger.valueOf(500000000).multiply(Utils.COIN);                 //main.h:  MAX_MONEY
+    //public static final String MAX_MONEY_STRING = "200000000";     //main.h:  MAX_MONEY
+
     public static BigInteger COIN = BigInteger.valueOf(100000);
     public static BigInteger CENT = BigInteger.valueOf(1000);
     public static BigInteger mCOIN = BigInteger.valueOf(100);
-
-    public static final int MAX_MONEY = 500000000;                 //main.h:  MAX_MONEY
-    public static final String MAX_MONEY_STRING = "500000000";     //main.h:  MAX_MONEY
 
     public static final BigInteger DEFAULT_MIN_TX_FEE = BigInteger.valueOf(10);   // MIN_TX_FEE
     public static final BigInteger DEFAULT_MIN_RELAY_TX_FEE = BigInteger.valueOf(100);   // MIN_TX_FEE
@@ -97,6 +107,9 @@ public class CoinDefinition {
 
 
     public static final boolean supportsBloomFiltering = true; //Requires PROTOCOL_VERSION 70000 in the client
+    public static boolean supportsIrcDiscovery() {
+        return PROTOCOL_VERSION <= 70000;
+    }
 
     public static final int Port    = 11973;       //protocol.h GetDefaultPort(testnet=false)
     public static final int TestPort = 21973;     //protocol.h GetDefaultPort(testnet=true)
@@ -117,8 +130,9 @@ public class CoinDefinition {
     static public String genesisHash = "00000c257b93a36e9a4318a64398d661866341331a984e2b486414fc5bb16ccd"; //main.cpp: hashGenesisBlock
     static public int genesisBlockValue = 1;                                                              //main.cpp: LoadBlockIndex
     //taken from the raw data of the block explorer
-    static public String genesisXInBytes = "04ffff001d0104423231204a756c7920323031332c2054686520477561726469616e2c20546573636f20626f7373207361797320636865617020666f6f6420657261206973206f766572";   //"21 July 2013, The Guardian, Tesco boss says cheap food era is over"
-    static public String genessiXOutBytes = "04678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb649f6bc3f4cef38c4f35504e51ec112de5c384df7ba0b8d578a4c702b6bf11d5f";
+
+    static public String genesisTxInBytes = "04ffff001d0104423231204a756c7920323031332c2054686520477561726469616e2c20546573636f20626f7373207361797320636865617020666f6f6420657261206973206f766572";   //"21 July 2013, The Guardian, Tesco boss says cheap food era is over"
+    static public String genesisTxOutBytes = "04678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb649f6bc3f4cef38c4f35504e51ec112de5c384df7ba0b8d578a4c702b6bf11d5f";
 
     //net.cpp strDNSSeed
     static public String[] dnsSeeds = new String[] {
@@ -158,6 +172,7 @@ public class CoinDefinition {
 
     };
     public static int minBroadcastConnections = 0;   //0 for default; we need more peers.
+
     //
     // TestNet - quarkcoin - not tested
     //
@@ -198,53 +213,6 @@ public class CoinDefinition {
 
         return nSubsidy;
     }
-/*    public static final BigInteger GetBlockReward(int height)
-    {
-        int COIN = 1;
-        BigInteger nSubsidy = Utils.toNanoCoins(15, 0);
-
-        if(height < 1080)
-        {
-            nSubsidy = Utils.toNanoCoins(2, 0); //2
-        }
-        else if(height < 2160)
-        {
-            nSubsidy   = Utils.toNanoCoins(1, 0); //2
-        }
-        else if(height < 3240)
-        {
-            nSubsidy   = Utils.toNanoCoins(2, 0); //2
-        }
-        else if(height < 4320)
-        {
-            nSubsidy  = Utils.toNanoCoins(5, 0); //5
-        }
-        else if(height < 5400)
-        {
-            nSubsidy  = Utils.toNanoCoins(8, 0); //8
-        }
-        else if(height < 6480)
-        {
-            nSubsidy = Utils.toNanoCoins(11, 0); //11
-        }
-        else if(height < 7560)
-        {
-            nSubsidy  = Utils.toNanoCoins(14, 0); //14
-        }
-        else if(height < 8640)
-        {
-            nSubsidy = Utils.toNanoCoins(17, 0); //17
-        }
-        else if(height < 523800)
-        {
-            nSubsidy = Utils.toNanoCoins(20, 0); //2
-        }
-        else
-        {
-            return nSubsidy.shiftRight(height / subsidyDecreaseBlockCount);
-        }
-        return nSubsidy;
-    }*/
 
     public static int subsidyDecreaseBlockCount = 60480;     //main.cpp GetBlockValue(height, fee)
 
@@ -283,6 +251,9 @@ public class CoinDefinition {
         checkpoints.put(538178, new Sha256Hash("000000000a13e56dc5d7962d4e3a852ff24055aa15096085d8173faf95172f4d"));
     }
 
+    //Unit Test Information
+    public static final String UNITTEST_ADDRESS = "DPHYTSm3f96dHRY3VG1vZAFC1QrEPkEQnt";
+    public static final String UNITTEST_ADDRESS_PRIVATE_KEY = "QU1rjHbrdJonVUgjT7Mncw7PEyPv3fMPvaGXp9EHDs1uzdJ98hUZ";
 
 
 

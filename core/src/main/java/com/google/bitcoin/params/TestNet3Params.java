@@ -57,7 +57,7 @@ public class TestNet3Params extends NetworkParameters {
             checkState(genesisHash.equals(CoinDefinition.testnetGenesisHash));
         alertSigningKey = Hex.decode(CoinDefinition.TESTNET_SATOSHI_KEY);
 
-        dnsSeeds = CoinDefinition.dnsSeeds;
+        dnsSeeds = CoinDefinition.testnetDnsSeeds;
 
     }
 
