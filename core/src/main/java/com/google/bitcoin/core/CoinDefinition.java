@@ -31,7 +31,7 @@ public class CoinDefinition {
     public static final String coinInternalName = "quarkcoin";
     public static final String cryptsyMarketId = "71";
     public static final String cryptsyMarketCurrency = "BTC";
-    public static final String PATTERN_PRIVATE_KEY_START = "6";
+    public static final String PATTERN_PRIVATE_KEY_START = "[Q6]";
 
     public enum CoinPrecision {
         Coins,

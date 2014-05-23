@@ -20,6 +20,10 @@ public class Hash9 {
             System.loadLibrary("hash9");
             native_library_loaded = true;
         }
+        catch(UnsatisfiedLinkError e)
+        {
+
+        }
         catch(Exception e)
         {
             native_library_loaded = false;
