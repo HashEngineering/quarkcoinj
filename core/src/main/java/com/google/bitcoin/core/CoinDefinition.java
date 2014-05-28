@@ -31,7 +31,7 @@ public class CoinDefinition {
     public static final String coinInternalName = "quarkcoin";
     public static final String cryptsyMarketId = "71";
     public static final String cryptsyMarketCurrency = "BTC";
-    public static final String PATTERN_PRIVATE_KEY_START = "[Q6]";
+    public static final String PATTERN_PRIVATE_KEY_START = "[U6]";
 
     public static String lowerCaseCoinName() { return coinName.toLowerCase(); }
 
@@ -87,11 +87,11 @@ public class CoinDefinition {
             return value / 2;
     }
     public static int spendableCoinbaseDepth = 240; //main.h: static const int COINBASE_MATURITY
-
-    public static final BigInteger MAX_MONEY = BigInteger.valueOf(500000000).multiply(Utils.COIN);                 //main.h:  MAX_MONEY
+    public static BigInteger COIN = BigInteger.valueOf(100000);
+    public static final BigInteger MAX_MONEY = BigInteger.valueOf(500000000).multiply(COIN);                 //main.h:  MAX_MONEY
     //public static final String MAX_MONEY_STRING = "200000000";     //main.h:  MAX_MONEY
 
-    public static BigInteger COIN = BigInteger.valueOf(100000);
+
     public static BigInteger CENT = BigInteger.valueOf(1000);
     public static BigInteger mCOIN = BigInteger.valueOf(100);
 
