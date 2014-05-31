@@ -257,8 +257,8 @@ public class CoinDefinition {
     }
 
     //Unit Test Information
-    public static final String UNITTEST_ADDRESS = "DPHYTSm3f96dHRY3VG1vZAFC1QrEPkEQnt";
-    public static final String UNITTEST_ADDRESS_PRIVATE_KEY = "QU1rjHbrdJonVUgjT7Mncw7PEyPv3fMPvaGXp9EHDs1uzdJ98hUZ";
+    public static final String UNITTEST_ADDRESS = "QSCbxvRcb6ojL6WFw1oB9hbEkWjLgGv2uD";
+    public static final String UNITTEST_ADDRESS_PRIVATE_KEY = "UXe9UTQdEh5YoYpSAHeqwq7Cfi6LNBAyUyJnjShFAdPpEWu3EdcF";
 
 
 
