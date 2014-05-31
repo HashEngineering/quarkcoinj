@@ -58,15 +58,11 @@ public class BuildCheckpoints {
         final BlockChain chain = new BlockChain(PARAMS, store);
         final PeerGroup peerGroup = new PeerGroup(PARAMS, chain);
         peerGroup.addAddress(InetAddress.getLocalHost());
-        //peerGroup.addAddress(InetAddress.getByName("seed3.quarkinvest.info"));
-        //peerGroup.addAddress(InetAddress.getByName("seed2.quarkinvest.info"));
-        //peerGroup.addAddress(InetAddress.getByName("seed1.quarkinvest.info"));
-        //peerGroup.addAddress(InetAddress.getByName("seed4.qrk.cc"));
 
         long now = new Date().getTime() / 1000;
         peerGroup.setFastCatchupTimeSecs(now);
 
-        final long oneMonthAgo = now - (86400 * 30);
+        final long oneMonthAgo = now - (86400 * CoinDefinition.checkpointDaysBack);
 
         chain.addListener(new AbstractBlockChainListener() {
             @Override
@@ -118,9 +114,9 @@ public class BuildCheckpoints {
 
 
         if (PARAMS.getId() == NetworkParameters.ID_MAINNET) {
-          //  StoredBlock test = manager.getCheckpointBefore(1390500000); // Thu Jan 23 19:00:00 CET 2014
-          //  checkState(test.getHeight() == 280224);
-          //  checkState(test.getHeader().getHashAsString()
+           // StoredBlock test = manager.getCheckpointBefore(1397366462); // Thu Jan 23 19:00:00 CET 2014
+           // checkState(test.getHeight() == 812000);
+           // checkState(test.getHeader().getHashAsString()
                //     .equals("5a4e378e1fd0cc77d9e4cfe84216366908e9352b3b5a661c7f0b590e4b077e27"));
         } else if (PARAMS.getId() == NetworkParameters.ID_TESTNET) {
           //  StoredBlock test = manager.getCheckpointBefore(1390500000); // Thu Jan 23 19:00:00 CET 2014

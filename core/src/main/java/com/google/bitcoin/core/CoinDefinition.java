@@ -63,6 +63,7 @@ public class CoinDefinition {
     public static final CoinHash coinHash = CoinHash.quark;
 
     public static boolean checkpointFileSupport = true;
+    public static int checkpointDaysBack = 21;
     //Original Values
     public static final int TARGET_TIMESPAN = (int)(10 * 60);  // 10 minutes per difficulty cycle, on average.
     public static final int TARGET_SPACING = (int)(1 * 30);  // 30 seconds per block.
@@ -249,6 +250,10 @@ public class CoinDefinition {
         checkpoints.put(467282, new Sha256Hash("0000000004a17401913be0aa29af7ace3335d58a846938d4fee0c749e4828d1d"));
         checkpoints.put(473033, new Sha256Hash("000000000515c71eb7c3de0574d5f6c632d8de9053c626aba22ae3a9eff67e9c"));
         checkpoints.put(538178, new Sha256Hash("000000000a13e56dc5d7962d4e3a852ff24055aa15096085d8173faf95172f4d"));
+        checkpoints.put(621138, new Sha256Hash("0000000016a7d31cabbc6257c53d3b58f82f1a897d79066dabcb5ce5b031f8ca"));
+        checkpoints.put(714001, new Sha256Hash("000000001d2b41db149991d5e01aee448042de6ac94e12c5ae6299e4fb129f5a"));
+        checkpoints.put(797370, new Sha256Hash("000000001b24a2f70ce1e50c19d5f3dd77fbd6e0f0a3eb61b95ceaafb8435636"));
+
     }
 
     //Unit Test Information
