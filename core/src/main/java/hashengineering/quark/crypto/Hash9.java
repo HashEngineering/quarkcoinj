@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Created by HashEngineering on 2/18/14.
  */
+@Deprecated
 public class Hash9 {
 
     private static final Logger log = LoggerFactory.getLogger(Hash9.class);

@@ -234,6 +234,8 @@ public class BitcoinSerializer {
             return new MemoryPoolMessage();
         } else if (command.equals("reject")) {
             return new RejectMessage(params, payloadBytes);
+        } else if (command.equals("checkpoint")) {
+            return new CheckpointMessage(params,payloadBytes);
         } else {
             log.warn("No support for deserializing message with name {}", command);
             return new UnknownMessage(params, command, payloadBytes);

@@ -21,6 +21,7 @@ import com.google.bitcoin.script.ScriptBuilder;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.hashengineering.crypto.Hash9;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,8 +38,6 @@ import java.util.List;
 
 import static com.google.bitcoin.core.Utils.doubleDigest;
 import static com.google.bitcoin.core.Utils.doubleDigestTwoBuffers;
-import static com.google.bitcoin.core.Utils.scryptDigest;
-import static hashengineering.quark.crypto.Hash9.quarkDigest;
 
 /**
  * <p>A block is a group of transactions, and is one of the fundamental data structures of the Bitcoin system.
@@ -193,8 +192,7 @@ public class Block extends Message {
         difficultyTarget = readUint32();
         nonce = readUint32();
 
-        hash = new Sha256Hash(Utils.reverseBytes(/*Utils.doubleDigest*/quarkDigest(bytes, offset, cursor)));
-        //Utils.doubleDigest(a, b, c);
+        hash = new Sha256Hash(Utils.reverseBytes(Hash9.digest(bytes, offset, cursor)));
 
         headerParsed = true;
         headerBytesValid = parseRetain;
@@ -508,7 +506,7 @@ public class Block extends Message {
         try {
             ByteArrayOutputStream bos = new UnsafeByteArrayOutputStream(HEADER_SIZE);
             writeHeader(bos);
-            return new Sha256Hash(Utils.reverseBytes(quarkDigest(bos.toByteArray())));
+            return new Sha256Hash(Utils.reverseBytes(Hash9.digest(bos.toByteArray())));
         } catch (IOException e) {
             throw new RuntimeException(e); // Cannot happen.
         }
@@ -527,7 +525,7 @@ public class Block extends Message {
         try {
             ByteArrayOutputStream bos = new UnsafeByteArrayOutputStream(HEADER_SIZE);
             writeHeader(bos);
-            return new Sha256Hash(Utils.reverseBytes(CoinDefinition.quarkDigest(bos.toByteArray())));
+            return new Sha256Hash(Utils.reverseBytes(CoinDefinition.digest(bos.toByteArray())));
         } catch (IOException e) {
             throw new RuntimeException(e); // Cannot happen.
         }
