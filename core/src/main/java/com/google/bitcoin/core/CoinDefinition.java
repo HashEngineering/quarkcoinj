@@ -1,18 +1,10 @@
 package com.google.bitcoin.core;
 
-import java.math.BigInteger;
-import java.util.Date;
-import java.util.Map;
-import java.util.Vector;
-import fr.cryptohash.BLAKE512;
-import fr.cryptohash.BMW512;
-import fr.cryptohash.Groestl512;
-import fr.cryptohash.Skein512;
-import fr.cryptohash.Keccak512;
-import fr.cryptohash.JH512;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import sun.management.resources.agent_ko;
+
+import java.math.BigInteger;
+import java.util.Map;
 
 /**
  * Created with IntelliJ IDEA.
@@ -100,7 +92,7 @@ public class CoinDefinition {
     public static final BigInteger DEFAULT_MIN_RELAY_TX_FEE = BigInteger.valueOf(100);   // MIN_TX_FEE
     public static final BigInteger DUST_LIMIT = CoinDefinition.CENT; //main.h CTransaction::GetMinFee        0.01 coins
 
-    public static final int PROTOCOL_VERSION = 70001;          //version.h PROTOCOL_VERSION
+    public static final int PROTOCOL_VERSION = 70002;          //version.h PROTOCOL_VERSION
     public static final int MIN_PROTOCOL_VERSION = 209;        //version.h MIN_PROTO_VERSION
 
     public static final int BLOCK_CURRENTVERSION = 1;   //CBlock::CURRENT_VERSION
@@ -137,39 +129,14 @@ public class CoinDefinition {
 
     //net.cpp strDNSSeed
     static public String[] dnsSeeds = new String[] {
-            "seed1.quarkfoundation.cc", //95.85.58.230
-            "seed2.quarkfoundation.cc", //162.243.46.40
-            "seed3.quarkfoundation.cc",// 188.226.154.76
-            "seed4.quarkfoundation.cc",// 128.199.215.12
-            "seed5.quarkfoundation.cc",
-            "seed6.quarkfoundation.cc",
-            "seed7.quarkfoundation.cc",
-            "seed8.quarkfoundation.cc",
-            "110.174.173.86",
-            "87.220.147.144",
-            "seed1.qrk.cc",      //162.243.253.209     ***
-        //    "seed2.qrk.cc",    //95.85.4.223
-         //   "seed3.qrk.cc",    //192.241.195.203
-            "seed4.qrk.cc",    //192.241.151.155 ***
-            "seed5.qrk.cc",    //95.85.2.86      ***
-           // "seed6.qrk.cc",    //162.243.138.170
-           // "seed1.qrkcoin.org",   //192.241.151.155  (duplicate)
-           // "seed2.qrkcoin.org", //95.85.4.223        (duplicate)
-            "seed3.qrkcoin.org", //193.68.21.25 ***
-           // "seed4.qrkcoin.org",  //95.85.4.223       (duplicate)
-           // "seed5.qrkcoin.org",  //162.243.138.170   (duplicate)
-           // "seed6.qrkcoin.org",  //95.85.2.86        (duplicate)
-           // "seed1.quarkinvest.info",  //192.241.151.155 (duplicate)
-           // "seed2.quarkinvest.info",  //95.85.2.86      (duplicate)
-           // "seed3.quarkinvest.info",  //162.243.138.170 (duplicate)
-           // "seed4.quarkinvest.info",  //95.85.4.223     (duplicate)
-           // "seed5.quarkinvest.info",  //192.241.195.203 (duplicate)
-           // "seed6.quarkinvest.info",  //192.241.151.155 (duplicate)
-            //"quarkcoin.no-ip.biz",       //95.85.2.86    (duplicate)
-            "quarkcoin.mooo.com",   //192.241.171.45  ***
-            //"qrk.ignorelist.com", //162.243.138.170      (duplicate)
-            //"qrk.redirectme.net",  //162.243.253.209  ***  (duplicate)
-            //"qrk.no-ip.biz",       //192.241.151.155       (duplicate)
+            "seed1.qrknet.info",
+            "seed2.qrknet.info",
+            "seed3.qrknet.info",
+            "seed4.qrknet.info",
+            "seed5.qrknet.info",
+            "seed6.qrknet.info",
+            "seed7.qrknet.info",
+            "seed8.qrknet.info",
 
     };
     public static int minBroadcastConnections = 0;   //0 for default; we need more peers.
@@ -255,6 +222,13 @@ public class CoinDefinition {
         checkpoints.put(797370, new Sha256Hash("000000001b24a2f70ce1e50c19d5f3dd77fbd6e0f0a3eb61b95ceaafb8435636"));
         checkpoints.put(895901, new Sha256Hash("0000000016db7c64fb4bb6475fbb06dca656d32b7864a2d045612660106d411c"));
         checkpoints.put(972235, new Sha256Hash("000000004e92bead093b946351cd2e7125d23e36042687497561db00a77b6ae8"));
+        checkpoints.put(1161321, new Sha256Hash("000000001f0e7c685ceaf5c5b04b1ebed2a1d8d588715ef6f6877af0015a6f2c"));
+        checkpoints.put(1620970, new Sha256Hash("0000000091dd05190ee8abb2fd4a946938ccd6401d16406e417546e19d2165ab"));
+        checkpoints.put(2046709, new Sha256Hash("000000007f6f146dbe428b0e277847889921d362844d52ade87049839711e026"));
+        checkpoints.put(2356006, new Sha256Hash("00000000f6b58b63543b61032c677fa133e6d6783b2096c587068a233377e91a"));
+        checkpoints.put(2434772, new Sha256Hash("0000000017564063a7ceec746f5cfb95d8f7803b1309a505a617d82ba2d3abbd"));
+        checkpoints.put(2437394, new Sha256Hash("00000000dfcafbaa8c160fd07ab80e44660ceccd12d760b8b5fe6ab1aeec52d6"));
+
     }
 
     //Unit Test Information

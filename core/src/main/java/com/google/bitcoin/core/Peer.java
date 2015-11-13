@@ -399,7 +399,7 @@ public class Peer extends PeerSocketHandler {
         } else if(m instanceof CheckpointMessage)
         {
             CheckpointMessage message = (CheckpointMessage)m;
-
+            //we do not process this at this time!
         } else {
             log.warn("Received unhandled message: {}", m);
         }
